@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+# TODO: migrate to distribute?
+#import distribute_setup
+#distribute_setup.use_setuptools()
+
+
+import os.path
+import sys
+from glob import glob
+
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
+
+
+def readme():
+    try:
+        with open(os.path.join(os.path.dirname(__file__), 'README.md')) as f:
+            return f.read()
+    except (IOError, OSError):
+        return ''
+
+
+def get_version():
+    src_path = os.path.join(os.path.dirname(__file__), 'picostack')
+    sys.path.append(src_path)
+    import findtools
+    return findtools.__version__
+
+
+setup(
+    name='picostack',
+    version='0.1.0',
+    description='A super lightweight KVM virtualization manager',
+    long_description=readme(),
+    author='Yauhen Yakimovich',
+    author_email='eugeny.yakimovitch@gmail.com',
+    url='https://github.com/ewiger/picostack',
+    license='MIT',
+    scripts=glob('bin/*'),
+    #data_files=glob('libexec/*'),
+    packages=['picostack', 'plato.shell', 'plato.schedule'],
+    package_dir={
+        'picostack': 'picostack',
+    },
+    download_url='https://github.com/ewiger/picostack/tarball/master',
+    install_requires=[
+        'sh >= 1.08',
+        'daemoncxt >= 1.5.7',
+    ],
+)
