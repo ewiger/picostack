@@ -80,16 +80,20 @@ class VmManager(object):
         raise Exception('Unknown VM manager: %s' % name)
 
     def build_machines(self):
-        pass
+        for machine in VmInstance.objects.filter(current_state='InCloning'):
+            self.clone_from_image(machine)
 
     def start_machines(self):
-        pass
+        for machine in VmInstance.objects.filter(current_state='Launched'):
+            self.run_machine(machine)
 
     def stop_machines(self):
-        pass
+        for machine in VmInstance.objects.filter(current_state='Terminating'):
+            self.stop_machine(machine)
 
     def destory_machines(self):
-        pass
+        for machine in VmInstance.objects.filter(current_state='Trashed'):
+            self.remove_machine(machine)
 
     def run_machine(self, machine):
         raise NotImplementedError()
@@ -97,7 +101,7 @@ class VmManager(object):
     def stop_machine(self, machine):
         raise NotImplementedError()
 
-    def clone_from_image(self, vm_image):
+    def clone_from_image(self, machine):
         raise NotImplementedError()
 
     def remove_machine(self, vm_image):
@@ -160,21 +164,29 @@ class Kvm(VmManager):
         # Kill the machine by pid.
         pid_filepath = self.get_pid_file(machine)
         ProcessUtil.kill_process(pid_filepath)
+        # Update state.
+        machine.change_state('Stopped')
 
-    def clone_from_image(self, machine_name, vm_image, flavour):
-        # Create a new instance.
-        machine = VmInstance.objects.create(name=machine_name,
-                                            image=vm_image,
-                                            flavour=flavour)
-        machine.save()
+    def clone_from_image(self, machine):
+        # Check if machine is in accepting state.
+        assert machine.current_state == 'InCloning'
+        logger.info('Cloning new machine \'%s\' form image \'%s\'' %
+                    (machine.name, machine.image.name))
         # Copy machine. Can take time.
-        src_file = self.get_image_path(vm_image)
+        src_file = self.get_image_path(machine.image)
         dst_file = self.get_disk_path(machine)
-        logger.info('Cloning image %s into %s: copying %s -> %s' %
-                    (vm_image.name, machine_name, src_file, dst_file))
+        logger.info('Copying %s -> %s' %
+                    (src_file, dst_file))
         shutil.copyfile(src_file, dst_file)
         # Update state to 'Stopped' - we are ready to run.
         machine.change_state('Stopped')
 
     def remove_machine(self, machine):
-        raise NotImplementedError()
+        # Check if machine is in accepting state.
+        assert machine.current_state == 'Trashed'
+        logger.info('Removing trashed machine \'%s\' and its files: \'%s\'' %
+                    (machine.name, machine.disk_filename))
+        disk_file = self.get_disk_path(machine)
+        os.unlink(disk_file)
+        machine.delete()
+        # TODO: clean logs?

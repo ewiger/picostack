@@ -41,7 +41,6 @@ class PicoStack(object):
     def process_instance_cmds(args):
         pass
 
-
     @staticmethod
     def process_image_cmds(args):
         pass
@@ -58,6 +57,9 @@ if __name__ == '__main__':
     parser = ArgumentParser(description='Command-line interface for plato '
                             + 'batch submission system.')
     parser.add_argument('-i','--interactive', action='store_true', default=False)
+    # TODO: add more sophisticated logging as in
+    # http://stackoverflow.com/questions/17275334/what-is-a-correct-way-to-filter-different-loggers-using-python-logging
+    # and logging.config.dictConfig
     subparsers = parser.add_subparsers()
 
     # daemon
@@ -83,6 +85,8 @@ if __name__ == '__main__':
                                   help='Start VM instance.')
     instances_parser.add_argument('--stop',
                                   help='Stop VM instance.')
+
+    # Add 'init' command that creates a default config file?
 
     # Parse arguments.
     args = parser.parse_args()

@@ -3,16 +3,22 @@ from django.db import models
 VM_IN_CLONING = 'C'
 # After cloning instance state is set to 'stopped'
 VM_IS_STOPPED = 'S'
+VM_IS_LAUNCHED = 'L'
 VM_IS_RUNNING = 'R'
 VM_HAS_FAILED = 'F'
+VM_IS_TERMINATING = 'T'
+VM_IS_TRASHED = 'W'
 # If instance is removed, it has no state but is just deleted from the DB.
 
 
 VM_STATES = (
-    ('C', 'InCloning'),
-    ('S', 'Stopped'),
-    ('R', 'Running'),
-    ('F', 'Failed'),
+    (VM_IN_CLONING, 'InCloning'),
+    (VM_IS_STOPPED, 'Stopped'),
+    (VM_IS_RUNNING, 'Running'),
+    (VM_IS_LAUNCHED, 'Launched')
+    (VM_HAS_FAILED, 'Failed'),
+    (VM_IS_TERMINATING, 'Terminating')
+    (VM_IS_TRASHED, 'Trashed')
 )
 
 VM_PORTS = {
@@ -124,3 +130,13 @@ class VmInstance(models.Model):
         # Update state.
         self.current_state = 'Stopped'
         self.save(force_insert=True)
+
+    @staticmethod
+    def prepare_for_cloning(machine_name, vm_image, flavour):
+        # Create a new instance.
+        machine = VmInstance.objects.create(name=machine_name,
+                                            image=vm_image,
+                                            current_state='InCloning',
+                                            flavour=flavour)
+        machine.save()
+        return machine
