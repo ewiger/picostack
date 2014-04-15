@@ -10,15 +10,14 @@ VM_IS_TERMINATING = 'T'
 VM_IS_TRASHED = 'W'
 # If instance is removed, it has no state but is just deleted from the DB.
 
-
 VM_STATES = (
     (VM_IN_CLONING, 'InCloning'),
     (VM_IS_STOPPED, 'Stopped'),
     (VM_IS_RUNNING, 'Running'),
-    (VM_IS_LAUNCHED, 'Launched')
+    (VM_IS_LAUNCHED, 'Launched'),
     (VM_HAS_FAILED, 'Failed'),
-    (VM_IS_TERMINATING, 'Terminating')
-    (VM_IS_TRASHED, 'Trashed')
+    (VM_IS_TERMINATING, 'Terminating'),
+    (VM_IS_TRASHED, 'Trashed'),
 )
 
 VM_PORTS = {
