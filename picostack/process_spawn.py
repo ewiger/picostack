@@ -5,6 +5,7 @@ import re
 import os
 import sys
 import time
+import signal
 import logging
 from StringIO import StringIO
 from datetime import datetime
@@ -204,3 +205,11 @@ class ProcessUtil(object):
                 return False
         # TODO: try to acquire a lock based on pidfile?
         return False
+
+    @classmethod
+    def kill_process(cls, pidfile_path):
+        assert ProcessUtil.process_runs(pidfile_path)
+        lock_obj = ProcessUtil.get_pidfile(pidfile_path)
+        pid = lock_obj.read_pid_from_pidfile()
+        # TODO: handle kill call correctly
+        os.kill(pid, signal.SIGINT)

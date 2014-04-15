@@ -40,7 +40,7 @@ setup(
     license='MIT',
     scripts=glob('bin/*'),
     #data_files=glob('libexec/*'),
-    packages=['picostack', 'plato.shell', 'plato.schedule'],
+    packages=['picostack', 'picostack.vms'],
     package_dir={
         'picostack': 'picostack',
     },
@@ -48,5 +48,6 @@ setup(
     install_requires=[
         'sh >= 1.08',
         'daemoncxt >= 1.5.7',
+        'Django >= 1.6.2',
     ],
 )

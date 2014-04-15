@@ -10,18 +10,82 @@ from picostack.deamon_app import (get_picostack_app, getBasicLogger)
 USER_HOME_DIR = os.path.expanduser('~/')
 VM_MANAGER = 'KVM'
 APP_NAME = 'picostk'
-CONF_NAME = APP_NAME + '.conf'
+CONFIG_NAME = APP_NAME + '.conf'
+CONFIG_DIR = os.path.join(USER_HOME_DIR, '.' + APP_NAME)
 DEBUG = True
-APP_BIN_DIR = os.path.dirname(os.path.abspath(__file__))
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
 logger = getBasicLogger(APP_NAME, logging.DEBUG)
 is_interactive = False
 
 
-def run_as_daemon(args):
-    picostack_app = get_plato_app()    
-    if not is_interactive:        
-        app_argv = [sys.argv[0], args.action]
-        daemon_runner = DaemonRunner(plato_app, app_argv)
-        daemon_runner.do_action()
-    else:
-        plato_app.run()
+class PicoStack(object):
+
+    @staticmethod
+    def run_as_daemon(args):
+        picostack_app = get_picostack_app(
+            app_name=APP_NAME,
+            config_name=CONFIG_NAME,
+            config_dir=CONFIG_DIR,
+            vm_manager=VM_MANAGER,
+            is_interactive=is_interactive,
+            is_debug=DEBUG,
+        )
+        if not is_interactive:
+            app_argv = [sys.argv[0], args.action]
+            daemon_runner = DaemonRunner(picostack_app, app_argv)
+            daemon_runner.do_action()
+        else:
+            picostack_app.run()
+
+    @staticmethod
+    def process_instance_cmds(args):
+        pass
+
+
+    @staticmethod
+    def process_image_cmds(args):
+        pass
+
+
+class ArgumentParser(argparse.ArgumentParser):
+
+    def error(self, message):
+        self.print_help(sys.stderr)
+        self.exit(2, '%s: error: %s\n' % (self.prog, message))
+
+
+if __name__ == '__main__':
+    parser = ArgumentParser(description='Command-line interface for plato '
+                            + 'batch submission system.')
+    parser.add_argument('-i','--interactive', action='store_true', default=False)
+    subparsers = parser.add_subparsers()
+
+    # daemon
+    daemon_parser = subparsers.add_parser('daemon')
+    daemon_parser.add_argument('action', help="{start, stop, restart}")
+    daemon_parser.set_defaults(func=PicoStack.run_as_daemon)
+
+    # images
+    images_parser = subparsers.add_parser('images')
+    images_parser.set_defaults(func=PicoStack.process_image_cmds)
+    images_parser.add_argument('--list', 'List images and their states')
+
+    # instances
+    instances_parser = subparsers.add_parser('instances')
+    instances_parser.set_defaults(func=PicoStack.process_instance_cmds)
+    instances_parser.add_argument('--list',
+                                  help='List instances and their states.')
+    instances_parser.add_argument('--build-from-image',
+                                  help='Build a new VM from image.')
+    instances_parser.add_argument('--destroy',
+                                  help='Completely remove VM and its files.')
+    instances_parser.add_argument('--start',
+                                  help='Start VM instance.')
+    instances_parser.add_argument('--stop',
+                                  help='Stop VM instance.')
+
+    # Parse arguments.
+    args = parser.parse_args()
+    # On error this will print help and cause exit with explanation message.
+    is_interactive = args.interactive
+    args.func(args)

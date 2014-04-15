@@ -59,8 +59,18 @@ class PicoStackApp(object):
         # Start with building some defaults.
         # Init/set application options.
         self.config.add_section('app')
-        #self.config.set('app', 'statepath', '%(default_statepath)s')
-        self.config.set('app', 'scheduler', '%(manager_name)s')
+        self.config.set('app', 'statepath', '%(default_statepath)s')
+        self.config.set('app', 'vm_manager', '%(manager_name)s')
+        self.config.set('app', 'is_interactive',
+                        str(int(self.is_interactive)))
+        self.config.set('app', 'log_path',
+                        '%(statepath)s/logs')
+        self.config.set('app', 'pidfiles_path',
+                        '%(statepath)s/pidfiles')
+        self.config.set('app', 'first_mapped_port',
+                        '10000')
+        self.config.set('app', 'last_mapped_port',
+                        '10100')
         # Init/set dameon options.
         self.config.add_section('daemon')
         self.config.set('daemon', 'stdin_path', '/dev/null')
@@ -73,17 +83,11 @@ class PicoStackApp(object):
         self.config.set('daemon', 'pidfile_timeout', '5')
         self.config.set('daemon', 'sleepping_pause', '10')
         # Init/set VM manager options.
-        self.config.add_section('scheduler')
-        self.config.set('scheduler', 'isinteractive',
-                        str(int(self.is_interactive)))
-        self.config.set('scheduler', 'attachments_path',
-                        '%(statepath)s/attachments')
-        self.config.set('scheduler', 'reports_path',
-                        '%(statepath)s/reports')
-        # local
-        self.config.add_section('local')
-        self.config.set('local', 'pidfiles_path',
-                        '%(statepath)s/pidfiles')
+        self.config.add_section('vm_manager')
+        self.config.set('vm_manager', 'vm_image_path',
+                        '%(statepath)s/images')
+        self.config.set('vm_manager', 'vm_disk_path',
+                        '%(statepath)s/disks')
 
     def load_config_file(self, config_name, config_dir):
         '''
@@ -95,33 +99,33 @@ class PicoStackApp(object):
             logger.info('Loading %s' % config_path)
             self.config.read(config_path)
 
-    def load_config(self, app_bin_dir, config_name=None):
+    def load_config(self, config_dir, config_name=None):
         '''Load more configuration from default locations'''
         if config_name is None:
             config_name = self.config_name
-        # Load defaults from .../bin/<APP>.conf
-        self.load_config_file(config_name, app_bin_dir)
+        # Load defaults from $(dirname picostk)/<APP>.conf
+        self.load_config_file(config_name, config_dir)
         # Override with user config which is ~/<APP>.conf
         self.load_config_file(config_name, USER_HOME_DIR)
 
     def validate_config(self):
         '''(Optional) validate config for arguments'''
-        # First run optional (method can be empty) config check for scheduler
+        # First run optional (method can be empty) config check for VM manager
         # components.
-        self.scheduler.validate_config()
+        self.vm_manager.validate_config()
         # Assert configuration for correctness.
         self.config.has_section('app')
         assert self.config.get('app', 'statepath') is not None
 
-    # @property
-    # def state_path(self):
-    #     if self.__state_path is None:
-    #         # Try to get configuration option.
-    #         self.__state_path = self.config.get('app', 'statepath')
-    #         if not os.path.exists(self.__state_path):
-    #             logger.warn('Creating a missing dir: %s' % self.__state_path)
-    #             os.makedirs(self.__state_path)
-    #     return self.__state_path
+    @property
+    def state_path(self):
+        if self.__state_path is None:
+            # Try to get configuration option.
+            self.__state_path = self.config.get('app', 'statepath')
+            if not os.path.exists(self.__state_path):
+                logger.warn('Creating a missing dir: %s' % self.__state_path)
+                os.makedirs(self.__state_path)
+        return self.__state_path
 
     @property
     def stdin_path(self):
@@ -164,14 +168,14 @@ class PicoStackApp(object):
             time.sleep(sleepping_pause)
 
 
-def get_picostack_app(app_name, conf_name, conf_dir,
+def get_picostack_app(app_name, config_name, config_dir,
                       vm_manager, is_interactive, is_debug):
     picostack_app = PicoStackApp(app_name,
-                                 conf_name,
+                                 config_name,
                                  vm_manager,
                                  is_interactive=is_interactive,
                                  debug=is_debug,
                                  logger=logger)
-    picostack_app.load_config(conf_dir)
+    picostack_app.load_config(config_dir)
     picostack_app.validate_config()
     return picostack_app
