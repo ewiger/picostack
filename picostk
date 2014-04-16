@@ -3,6 +3,7 @@ import os
 import sys
 import argparse
 import logging
+from functools import partial
 from daemoncxt.runner import DaemonRunner
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "picostack.settings")
@@ -24,8 +25,16 @@ is_interactive = False
 
 class PicoStack(object):
 
+    def init(self, options):
+        self.options = options
+
     @staticmethod
-    def run_as_daemon(args):
+    def run_as_daemon(args, subparser):
+        # Has user defined an action.
+        if not args.action:
+            subparser.print_help()
+            return
+        # Get app that can do {start, stop, restart}.
         picostack_app = get_picostack_app(
             app_name=APP_NAME,
             config_name=CONFIG_NAME,
@@ -34,20 +43,32 @@ class PicoStack(object):
             is_interactive=is_interactive,
             is_debug=DEBUG,
         )
-        if not is_interactive:
-            app_argv = [sys.argv[0], args.action]
-            daemon_runner = DaemonRunner(picostack_app, app_argv)
-            daemon_runner.do_action()
-        else:
+        if args.action == 'start' and is_interactive:
             picostack_app.run()
 
-    @staticmethod
-    def process_instance_cmds(args):
-        pass
+            return
+        if args.action == 'stop' or args.action == 'restart':
+            # Stop all VMs.
+            pass
+        # Note: picostack daemon app will find pid and kill the process or
+        # start a new one. We just need to pass the action.
+        app_argv = [sys.argv[0], args.action]
+        daemon_runner = DaemonRunner(picostack_app, app_argv)
+        daemon_runner.do_action()
 
     @staticmethod
-    def process_image_cmds(args):
-        pass
+    def process_instance_cmds(args, subparser):
+        if args.list:
+            pass
+        else:
+            subparser.print_help()
+
+    @staticmethod
+    def process_image_cmds(args, subparser):
+        if args.list:
+            pass
+        else:
+            subparser.print_help()
 
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -58,9 +79,14 @@ class ArgumentParser(argparse.ArgumentParser):
 
 
 if __name__ == '__main__':
-    parser = ArgumentParser(description='Command-line interface for plato '
-                            + 'batch submission system.')
-    parser.add_argument('-i','--interactive', action='store_true', default=False)
+    parser = ArgumentParser(description='Command-line interface for picostack '
+                            + ' - a minimalistic KVM manager.')
+    parser.add_argument('-i', '--interactive', action='store_true',
+                        default=False)
+    parser.add_argument("-v", "--verbosity", action="count",
+                        help='Increase logging verbosity (-v WARN, -vv INFO, '
+                        '-vvv DEBUG)')
+
     # TODO: add more sophisticated logging as in
     # http://stackoverflow.com/questions/17275334/what-is-a-correct-way-to-filter-different-loggers-using-python-logging
     # and logging.config.dictConfig
@@ -68,17 +94,21 @@ if __name__ == '__main__':
 
     # daemon
     daemon_parser = subparsers.add_parser('daemon')
+    # TODO: action must be a choice
     daemon_parser.add_argument('action', help="{start, stop, restart}")
-    daemon_parser.set_defaults(func=PicoStack.run_as_daemon)
+    daemon_parser.set_defaults(handler=partial(
+        PicoStack.run_as_daemon, subparser=daemon_parser))
 
     # images
     images_parser = subparsers.add_parser('images')
-    images_parser.set_defaults(func=PicoStack.process_image_cmds)
+    images_parser.set_defaults(handler=partial(
+        PicoStack.process_image_cmds, subparser=images_parser))
     images_parser.add_argument('--list', help='List images and their states')
 
     # instances
     instances_parser = subparsers.add_parser('instances')
-    instances_parser.set_defaults(func=PicoStack.process_instance_cmds)
+    instances_parser.set_defaults(handler=partial(
+        PicoStack.process_instance_cmds, subparser=instances_parser))
     instances_parser.add_argument('--list',
                                   help='List instances and their states.')
     instances_parser.add_argument('--build-from-image',
@@ -96,4 +126,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # On error this will print help and cause exit with explanation message.
     is_interactive = args.interactive
-    args.func(args)
+    if args.handler:
+        args.handler(args)
+    else:
+        parser.print_help()
