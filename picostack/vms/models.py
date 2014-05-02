@@ -36,6 +36,12 @@ class VmImage(models.Model):
     # Used to check if we have enough free space when cloning (in MB).
     disk_size = models.PositiveIntegerField()
 
+    def __repr__(self):
+        return 'VM Image: <%s>' % self.name
+
+    def __str__(self):
+        return self.name
+
 
 class Flavour(models.Model):
 
@@ -46,6 +52,12 @@ class Flavour(models.Model):
 
     # Number of cores
     num_of_cores = models.PositiveSmallIntegerField(default=1)
+
+    def __repr__(self):
+        return 'VM Flavour: <%s>' % self.name
+
+    def __str__(self):
+        return self.name
 
 
 class VmInstance(models.Model):
@@ -139,3 +151,11 @@ class VmInstance(models.Model):
                                             flavour=flavour)
         machine.save()
         return machine
+
+    def __repr__(self):
+        return 'VM instance <%s> (flavour: %s, image: %s) ' % (
+            self.name, self.flavour.name, self.image.name)
+
+    def __str__(self):
+        return '%s (%s, %s)' % (
+            self.name, self.flavour.name, self.image.name)

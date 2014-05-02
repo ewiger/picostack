@@ -11,7 +11,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "picostack.settings")
 sys.path.append(os.path.dirname(__file__))
 
 from picostack.deamon_app import (get_picostack_app, getBasicLogger)
-from picostack.vms.models import VmImage
+from picostack.vms.models import (VmImage, VmInstance, Flavour)
 
 USER_HOME_DIR = os.path.expanduser('~/')
 VM_MANAGER = 'KVM'
@@ -23,6 +23,7 @@ APP_DIR = os.path.dirname(os.path.abspath(__file__))
 logger = getBasicLogger(APP_NAME, logging.DEBUG)
 is_interactive = False
 LINE_WIDTH = 80
+DEFAULT_FLAVOUR = 'tiny'
 
 
 def format_text(text):
@@ -57,6 +58,40 @@ class PicoStack(object):
                 'name': vm_image.name,
             })
 
+    def list_instances(self):
+        if len(VmInstance.objects.all()) == 0:
+            print 'There are no VM instances found.'
+            exit()
+        print 'Listing all VM instances..'
+        for index, vm_instance in enumerate(VmInstance.objects.all()):
+            print '-' * LINE_WIDTH
+            print format_text('''
+                VM instance #%(index)d
+
+                name: %(name)s
+                status: %(status)s
+                ''' % {
+                'index': index,
+                'name': vm_instance.name,
+                'status': vm_instance.status,
+            })
+
+    def build_vm(vm_name, image_name, flavour_name=DEFAULT_FLAVOUR):
+        image = VmImage.objects.get(name=image_name)
+        if not image:
+            print 'VM image does not exists: %s' % image_name
+            exit()
+        flavour = Flavour.objects.get(name=flavour_name)
+        if not image:
+            print 'VM flavour does not exists: %s' % flavour_name
+            exit()
+        machine = VmInstance(
+            name='test_vm',
+            image=vm_image,
+            flavour=flavour,
+        )
+        machine.save()
+
     @staticmethod
     def run_as_daemon(args, subparser):
         # Has user defined an action.
@@ -86,17 +121,23 @@ class PicoStack(object):
         daemon_runner.do_action()
 
     @staticmethod
-    def process_instance_cmds(args, subparser):
+    def process_image_cmds(args, subparser):
+        instance = PicoStack(args)
         if args.list:
-            pass
+            instance.list_images()
         else:
             subparser.print_help()
 
     @staticmethod
-    def process_image_cmds(args, subparser):
+    def process_instance_cmds(args, subparser):
+        instance = PicoStack(args)
         if args.list:
-            instance = PicoStack(args)
-            instance.list_images()
+            instance.list_instances()
+        elif args.build_from_image:
+            vm_name = args.vm_name
+            image_name = args.build_from_image
+            image_name = args.flavour_name
+            instance.build_vm(image_name)
         else:
             subparser.print_help()
 
@@ -133,19 +174,27 @@ if __name__ == '__main__':
     images_parser = subparsers.add_parser('images')
     images_parser.set_defaults(handler=partial(
         PicoStack.process_image_cmds, subparser=images_parser))
-    images_parser.add_argument('list', help='List images and their states')
+    images_parser.add_argument('--list', action='store_true', default=False,
+                               help='List images and their states')
 
     # instances
     instances_parser = subparsers.add_parser('instances')
     instances_parser.set_defaults(handler=partial(
         PicoStack.process_instance_cmds, subparser=instances_parser))
-    instances_parser.add_argument('--list',
+
+    instances_parser.add_argument('--vm-name',
+                                  help='Unique name of VM instance.')
+
+    instances_parser.add_argument('--flavour',
+                                  help='Unique name of existing VM flavour.')
+
+    instances_parser.add_argument('--list', action='store_true', default=False,
                                   help='List instances and their states.')
     instances_parser.add_argument('--build-from-image',
                                   help='Build a new VM from image.')
     instances_parser.add_argument('--destroy',
                                   help='Completely remove VM and its files.')
-    instances_parser.add_argument('--start',
+    instances_parser.add_argument('--start', dest='start_vm',
                                   help='Start VM instance.')
     instances_parser.add_argument('--stop',
                                   help='Stop VM instance.')
