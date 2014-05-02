@@ -1,4 +1,14 @@
 #!/usr/bin/env python
+'''***picostk*** is a command-line interface for **picostack** - a complete
+minimalistic KVM virtualization manager suitable for single linux-based host
+system.
+
+Copyright (c) 2014 Yauhen Yakimovich
+
+The MIT License (MIT). Read a copy of LICENSE distributed with this code.
+
+See README and project page at https://github.com/ewiger/picostack
+'''
 import os
 import sys
 import argparse
@@ -12,6 +22,9 @@ sys.path.append(os.path.dirname(__file__))
 
 from picostack.deamon_app import (get_picostack_app, getBasicLogger)
 from picostack.vms.models import (VmImage, VmInstance, Flavour)
+from picostack import __version__ as PICOSTACK_VERSION
+from picostack.errors import PicoStackError
+
 
 USER_HOME_DIR = os.path.expanduser('~/')
 VM_MANAGER = 'KVM'
@@ -23,7 +36,6 @@ APP_DIR = os.path.dirname(os.path.abspath(__file__))
 logger = getBasicLogger(APP_NAME, logging.DEBUG)
 is_interactive = False
 LINE_WIDTH = 80
-DEFAULT_FLAVOUR = 'tiny'
 
 
 def format_text(text):
@@ -35,6 +47,10 @@ def format_text(text):
     #lines = textwrap.wrap(textwrap.dedent(text), width=LINE_WIDTH,
     #                      break_on_hyphens=False, break_long_words=False)
     #return '\n'.join(lines)
+
+
+class MissingCliArgs(PicoStackError):
+    '''Error of parsing command-line arguments.'''
 
 
 class PicoStack(object):
@@ -75,22 +91,6 @@ class PicoStack(object):
                 'name': vm_instance.name,
                 'status': vm_instance.status,
             })
-
-    def build_vm(vm_name, image_name, flavour_name=DEFAULT_FLAVOUR):
-        image = VmImage.objects.get(name=image_name)
-        if not image:
-            print 'VM image does not exists: %s' % image_name
-            exit()
-        flavour = Flavour.objects.get(name=flavour_name)
-        if not image:
-            print 'VM flavour does not exists: %s' % flavour_name
-            exit()
-        machine = VmInstance(
-            name='test_vm',
-            image=vm_image,
-            flavour=flavour,
-        )
-        machine.save()
 
     @staticmethod
     def run_as_daemon(args, subparser):
@@ -134,10 +134,25 @@ class PicoStack(object):
         if args.list:
             instance.list_instances()
         elif args.build_from_image:
+            # vm name
+            if not args.vm_name:
+                raise MissingCliArgs('Missing vm_name in --vm-name.')
             vm_name = args.vm_name
+            # image name
+            if not args.build_from_image:
+                raise MissingCliArgs('Missing image name in '
+                                     '--build-from-image.')
             image_name = args.build_from_image
-            image_name = args.flavour_name
-            instance.build_vm(image_name)
+            # flavour name
+            if not args.flavour:
+                raise MissingCliArgs('Missing flavour name in --flavour.')
+            flavour_name = args.flavour
+            # Do actual work. Exceptions are handled by calling functions.
+            sys.stdout.write('Trying to start building a new VM instance "%s"'
+                             ' from image "%s"..' % (vm_name, image_name))
+            VmInstance.build_vm(vm_name, image_name, flavour_name)
+            sys.stdout.write('OK, new VM instance is in cloning now.')
+
         else:
             subparser.print_help()
 
@@ -157,6 +172,8 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--verbosity", action="count",
                         help='Increase logging verbosity (-v WARN, -vv INFO, '
                         '-vvv DEBUG)')
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s ' + PICOSTACK_VERSION)
 
     # TODO: add more sophisticated logging as in
     # http://stackoverflow.com/questions/17275334/what-is-a-correct-way-to-filter-different-loggers-using-python-logging
@@ -206,6 +223,12 @@ if __name__ == '__main__':
     # On error this will print help and cause exit with explanation message.
     is_interactive = args.interactive
     if args.handler:
-        args.handler(args)
+        try:
+            args.handler(args)
+        except PicoStackError as pico_error:
+            print 'Failed.'
+            if type(pico_error) is MissingCliArgs:
+                print 'Missing one of the required command-line arguments.'
+            print 'Error message: "%s"' % str(pico_error)
     else:
         parser.print_help()

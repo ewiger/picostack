@@ -1,4 +1,6 @@
 from django.db import models
+from picostack.errors import DataModelError
+
 
 VM_IN_CLONING = 'C'
 # After cloning instance state is set to 'stopped'
@@ -25,6 +27,8 @@ VM_PORTS = {
     'vnc': '5900',
     'rdp': '3389',
 }
+
+DEFAULT_FLAVOUR = 'tiny'
 
 
 class VmImage(models.Model):
@@ -152,6 +156,25 @@ class VmInstance(models.Model):
         machine.save()
         return machine
 
+    @staticmethod
+    def build_vm(vm_name, image_name, flavour_name=DEFAULT_FLAVOUR):
+        vm_image = VmImage.objects.get(name=image_name)
+        if not vm_image:
+            raise DataModelError('VM image does not exists: %s' % image_name)
+        flavour = Flavour.objects.get(name=flavour_name)
+        if not flavour:
+            raise DataModelError('VM flavour does not exists: %s' %
+                                 flavour_name)
+        if VmInstance.objects.filter(name=vm_name).exists():
+            raise DataModelError('VM instance with this name already exists.')
+        machine = VmInstance(
+            name=vm_name,
+            image=vm_image,
+            flavour=flavour,
+        )
+        machine.save()
+
+    # Some representation and casting implementation.
     def __repr__(self):
         return 'VM instance <%s> (flavour: %s, image: %s) ' % (
             self.name, self.flavour.name, self.image.name)
