@@ -30,12 +30,17 @@ USER_HOME_DIR = os.path.expanduser('~/')
 VM_MANAGER = 'KVM'
 APP_NAME = 'picostk'
 CONFIG_NAME = APP_NAME + '.conf'
-CONFIG_DIR = os.path.join(USER_HOME_DIR, '.' + APP_NAME)
+CONFIG_DIR = os.path.join(USER_HOME_DIR, '.picostack')
 DEBUG = True
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 logger = getBasicLogger(APP_NAME, logging.DEBUG)
 is_interactive = False
 LINE_WIDTH = 80
+CONFIG_VARS = {
+    'config_name': CONFIG_NAME,
+    'manager_name': VM_MANAGER,
+    'default_statepath': CONFIG_DIR,
+}
 
 
 def format_text(text):
@@ -52,6 +57,8 @@ def format_text(text):
 class MissingCliArgs(PicoStackError):
     '''Error of parsing command-line arguments.'''
 
+class PicoStackIOError(PicoStackError):
+    '''Similar to IOError but relates to PicoStack logic.'''
 
 class PicoStack(object):
 
@@ -92,6 +99,39 @@ class PicoStack(object):
                 'status': vm_instance.status,
             })
 
+    def init_config(self):
+        '''
+        Initialize configuration in <CONFIG_DIR>/config file. Create
+        default settings and other expected folders and files.
+        '''
+        if os.path.exists(CONFIG_DIR):
+            raise PicoStackIOError('Abort. Config location already exists: '
+                                   '%s' % CONFIG_DIR)
+        os.mkdir(CONFIG_DIR)
+        config_path = os.path.join(CONFIG_DIR, CONFIG_NAME)
+        print 'Putting default configuration into %s' % config_path
+        # Get app with config defaults.
+        picostack_app = get_picostack_app(
+            app_name=APP_NAME,
+            config_vars=CONFIG_VARS,
+            config_dir=CONFIG_DIR,
+            is_interactive=True,
+            is_debug=DEBUG,
+            only_defaults=True,
+        )
+        # Write defaults.
+        with open(config_path, 'w+') as config_file:
+            picostack_app.config.write(config_file)
+        # Make missing folders. Can be later symlinked to a different location.
+        missing_folders = [
+            picostack_app.config.get('vm_manager', 'vm_image_path'),
+            picostack_app.config.get('vm_manager', 'vm_disk_path'),
+        ]
+        for missing_folder in missing_folders:
+            print 'Creating missing folder: %s' % missing_folder
+            os.mkdir(missing_folder)
+
+
     @staticmethod
     def run_as_daemon(args, subparser):
         # Has user defined an action.
@@ -101,9 +141,8 @@ class PicoStack(object):
         # Get app that can do {start, stop, restart}.
         picostack_app = get_picostack_app(
             app_name=APP_NAME,
-            config_name=CONFIG_NAME,
+            config_vars=CONFIG_VARS,
             config_dir=CONFIG_DIR,
-            vm_manager=VM_MANAGER,
             is_interactive=is_interactive,
             is_debug=DEBUG,
         )
@@ -156,6 +195,14 @@ class PicoStack(object):
         else:
             subparser.print_help()
 
+    @staticmethod
+    def process_init_cmds(args, subparser):
+        instance = PicoStack(args)
+        if args.target == 'config':
+            instance.init_config()
+        else:
+            subparser.print_help()
+
 
 class ArgumentParser(argparse.ArgumentParser):
 
@@ -175,15 +222,22 @@ if __name__ == '__main__':
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + PICOSTACK_VERSION)
 
+
     # TODO: add more sophisticated logging as in
     # http://stackoverflow.com/questions/17275334/what-is-a-correct-way-to-filter-different-loggers-using-python-logging
     # and logging.config.dictConfig
     subparsers = parser.add_subparsers()
 
+    # initialization routines
+    init_parser = subparsers.add_parser('init')
+    init_parser.add_argument('target', choices=['config', 'UbuntuJeOS'])
+    init_parser.set_defaults(handler=partial(
+        PicoStack.process_init_cmds, subparser=init_parser))
+
     # daemon
     daemon_parser = subparsers.add_parser('daemon')
     # TODO: action must be a choice
-    daemon_parser.add_argument('action', help="{start, stop, restart}")
+    daemon_parser.add_argument('action', choices=['start', 'stop', 'restart'])
     daemon_parser.set_defaults(handler=partial(
         PicoStack.run_as_daemon, subparser=daemon_parser))
 
@@ -216,19 +270,18 @@ if __name__ == '__main__':
     instances_parser.add_argument('--stop',
                                   help='Stop VM instance.')
 
-    # Add 'init' command that creates a default config file?
-
     # Parse arguments.
     args = parser.parse_args()
     # On error this will print help and cause exit with explanation message.
     is_interactive = args.interactive
-    if args.handler:
-        try:
+    try:
+        if args.handler:
             args.handler(args)
-        except PicoStackError as pico_error:
-            print 'Failed.'
-            if type(pico_error) is MissingCliArgs:
-                print 'Missing one of the required command-line arguments.'
-            print 'Error message: "%s"' % str(pico_error)
-    else:
-        parser.print_help()
+        else:
+            parser.print_help()
+
+    except PicoStackError as pico_error:
+        print 'Failed.'
+        if type(pico_error) is MissingCliArgs:
+            print 'Missing one of the required command-line arguments.'
+        print 'Error message: "%s"' % str(pico_error)

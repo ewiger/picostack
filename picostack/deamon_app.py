@@ -36,24 +36,16 @@ class PicoStackApp(object):
     daemoncxt.runner in https://github.com/ewiger/daemoncxt
     '''
 
-    def __init__(self, name, config_name, manager_name, debug=False,
+    def __init__(self, name, config_vars, debug=False,
                  is_interactive=False, logger=None):
         self.name = name
-        self.config_name = config_name
+        self.config_name = config_vars['config_name']
+        self.manager_name = config_vars['manager_name']
         self.debug = debug
         self.is_interactive = is_interactive
-        self.config = ConfigParser.ConfigParser(
-            defaults=self.get_config_vars(manager_name=manager_name))
+        self.config = ConfigParser.ConfigParser(defaults=config_vars)
         self.init_config()
         self.vm_manager = VmManager.create(self.manager_name, self.config)
-
-    def get_config_vars(self, manager_name):
-        '''Mainly defined shared variables with defaults'''
-        return dict(
-            # Fallback to default folder in user home.
-            statepath=os.path.expanduser('~/.' + self.name),
-            manager_name=manager_name,
-        )
 
     def init_config(self):
         # Start with building some defaults.
@@ -64,9 +56,9 @@ class PicoStackApp(object):
         self.config.set('app', 'is_interactive',
                         str(int(self.is_interactive)))
         self.config.set('app', 'log_path',
-                        '%(statepath)s/logs')
+                        '%(default_statepath)s/logs')
         self.config.set('app', 'pidfiles_path',
-                        '%(statepath)s/pidfiles')
+                        '%(default_statepath)s/pidfiles')
         self.config.set('app', 'first_mapped_port',
                         '10000')
         self.config.set('app', 'last_mapped_port',
@@ -79,15 +71,15 @@ class PicoStackApp(object):
         self.config.set('daemon', 'stderr_path',
                         '/dev/tty' if self.debug else '/dev/null')
         self.config.set('daemon', 'pidfile_path',
-                        '%(statepath)s' + self.name + '.pid')
+                        '%(default_statepath)s/' + self.name + '.pid')
         self.config.set('daemon', 'pidfile_timeout', '5')
         self.config.set('daemon', 'sleepping_pause', '10')
         # Init/set VM manager options.
         self.config.add_section('vm_manager')
         self.config.set('vm_manager', 'vm_image_path',
-                        '%(statepath)s/images')
+                        '%(default_statepath)s/images')
         self.config.set('vm_manager', 'vm_disk_path',
-                        '%(statepath)s/disks')
+                        '%(default_statepath)s/disks')
 
     def load_config_file(self, config_name, config_dir):
         '''
@@ -114,7 +106,7 @@ class PicoStackApp(object):
         # components.
         self.vm_manager.validate_config()
         # Assert configuration for correctness.
-        self.config.has_section('app')
+        assert self.config.has_section('app')
         assert self.config.get('app', 'statepath') is not None
 
     @property
@@ -168,14 +160,15 @@ class PicoStackApp(object):
             time.sleep(sleepping_pause)
 
 
-def get_picostack_app(app_name, config_name, config_dir,
-                      vm_manager, is_interactive, is_debug):
+def get_picostack_app(app_name, config_vars, config_dir,
+                      is_interactive, is_debug, only_defaults=False):
     picostack_app = PicoStackApp(app_name,
-                                 config_name,
-                                 vm_manager,
+                                 config_vars,
                                  is_interactive=is_interactive,
                                  debug=is_debug,
                                  logger=logger)
+    if only_defaults:
+        return picostack_app
     picostack_app.load_config(config_dir)
     picostack_app.validate_config()
     return picostack_app

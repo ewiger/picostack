@@ -27,6 +27,19 @@ class VmManager(object):
         self.__mapping_port_range = None
 
     @property
+    def vm_image_path(self):
+        return self.config.get('vm_manager', 'vm_image_path')
+
+    @property
+    def vm_disk_path(self):
+        return self.config.get('vm_manager', 'vm_disk_path')
+
+    def validate_config(self):
+        assert self.config.has_section('vm_manager')
+        assert os.path.exists(self.vm_image_path)
+        assert os.path.exists(self.vm_disk_path)
+
+    @property
     def mapping_port_range(self):
         if self.__mapping_port_range is None:
             first_port = int(self.config.get('app', 'first_mapped_port'))
