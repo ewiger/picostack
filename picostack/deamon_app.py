@@ -95,9 +95,9 @@ class PicoStackApp(object):
         '''Load more configuration from default locations'''
         if config_name is None:
             config_name = self.config_name
-        # Load defaults from $(dirname picostk)/<APP>.conf
+        # Load defaults from config dir, i.e. ~/.picostack.
         self.load_config_file(config_name, config_dir)
-        # Override with user config which is ~/<APP>.conf
+        # Override with user config.
         self.load_config_file(config_name, USER_HOME_DIR)
 
     def validate_config(self):
