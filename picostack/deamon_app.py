@@ -142,7 +142,7 @@ class PicoStackApp(object):
     @property
     def pidfile_timeout(self):
         '''Part of DaemonRunner protocol'''
-        return self.config.get('daemon', 'pidfile_timeout')
+        return self.config.getint('daemon', 'pidfile_timeout')
 
     def step(self):
         '''A single step of actual work, done by daemon'''
