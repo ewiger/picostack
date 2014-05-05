@@ -93,19 +93,35 @@ class VmManager(object):
         raise Exception('Unknown VM manager: %s' % name)
 
     def build_machines(self):
-        for machine in VmInstance.objects.filter(current_state='InCloning'):
+        instances = VmInstance.objects.filter(current_state='InCloning')
+        if not instances.exists():
+            logger.info('Nothing to clone..')
+        for machine in instances:
+            logger.info('Cloning %s' % machine.name)
             self.clone_from_image(machine)
 
     def start_machines(self):
-        for machine in VmInstance.objects.filter(current_state='Launched'):
+        instances = VmInstance.objects.filter(current_state='Launched')
+        if not instances.exists():
+            logger.info('Nothing to start..')
+        for machine in instances:
+            logger.info('Start running machine %s' % machine.name)
             self.run_machine(machine)
 
     def stop_machines(self):
-        for machine in VmInstance.objects.filter(current_state='Terminating'):
+        instances = VmInstance.objects.filter(current_state='Terminating')
+        if not instances.exists():
+            logger.info('Nothing to stop..')
+        for machine in instances:
+            logger.info('Terminating machine %s' % machine.name)
             self.stop_machine(machine)
 
     def destory_machines(self):
-        for machine in VmInstance.objects.filter(current_state='Trashed'):
+        instances = VmInstance.objects.filter(current_state='Trashed')
+        if not instances.exists():
+            logger.info('Nothing to trash..')
+        for machine in instances:
+            logger.info('Trashing machine %s' % machine.name)
             self.remove_machine(machine)
 
     def run_machine(self, machine):
