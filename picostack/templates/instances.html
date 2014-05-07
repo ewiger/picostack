@@ -4,15 +4,27 @@
 
 {% load bootstrap3 %}
 {% block content %}
-{# Display a form #}
-<form action="/url/to/submit/" method="post" class="form">
-    {% csrf_token %}
-    {% bootstrap_form form %}
-    {% buttons %}
-        <button type="submit" class="btn btn-primary">
-            Submit
-        </button>
-    {% endbuttons %}
-</form>
+<div class="container-fluid">
+    <div class="row">
+
+  	<div class="col-md-2"></div>
+
+  	<div class="col-md-8">
+		{# Display a form #}
+		<form action="/url/to/submit/" method="post" class="form">
+		    {% csrf_token %}
+		    {% bootstrap_form form %}
+		    {% buttons %}
+		        <button type="submit" class="btn btn-primary">
+		            Submit
+		        </button>
+		    {% endbuttons %}
+		</form>
+	</div>
+
+	<div class="col-md-2"></div>
+
+	</div>
+</div>
 
 {% endblock %}
