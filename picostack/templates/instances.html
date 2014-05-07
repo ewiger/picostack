@@ -10,16 +10,55 @@
   	<div class="col-md-2"></div>
 
   	<div class="col-md-8">
-		{# Display a form #}
-		<form action="/url/to/submit/" method="post" class="form">
-		    {% csrf_token %}
-		    {% bootstrap_form form %}
-		    {% buttons %}
-		        <button type="submit" class="btn btn-primary">
-		            Submit
-		        </button>
-		    {% endbuttons %}
-		</form>
+		
+  	    {% if formset.total_form_count > 0 %}
+
+			<form action="/instances/" method="post" class="form">
+			{{ formset.management_form }}
+	    	<table class="table table-striped">
+		    	<thead>
+		    		<tr>
+		    		{% for column_name in columns %}
+		    		<th>{{ column_name }}</th>
+		    		{% endfor %}
+		    		<th></th>
+		    		</tr>
+		    	</thead>
+		    	<tbody>
+		        {% for form in formset %}
+		        	<tr>
+		        	
+				    {% csrf_token %}  
+
+				    {% for field in form.visible_fields %}
+		            	<td> {{ field }} </td>
+		        	{% endfor %}
+		        		<td>
+		        			<button name="_save" type="submit" class="btn btn-default">
+					            Save
+					        </button>
+					        <button name="_start" type="submit" class="btn btn-primary">
+					            Start
+					        </button>
+							<button name="_stop" type="submit" class="btn btn-warning">
+					            Stop
+					        </button>				        
+					        <button name="_trash" type="submit" class="btn btn-danger">
+					            Trash
+					        </button>
+				        </td>
+					</tr>
+
+		        {% endfor %}
+		        </tbody>
+	    	</table>
+			</form>
+
+		{% else %}
+
+			<h4> There were no instances found. Consider cloning a new one.</h4>
+		
+		{% endif %}
 	</div>
 
 	<div class="col-md-2"></div>
