@@ -1,7 +1,6 @@
 '''
 Run on a local linux machine a subprocess in a daemon mode. Log the result.
 '''
-import re
 import os
 import sys
 import time
@@ -13,7 +12,7 @@ from daemoncxt.daemon import DaemonContext
 import errno
 from daemoncxt.lockfile import LockTimeout
 from daemoncxt.pidlockfile import TimeoutPIDLockFile
-from subprocess import PIPE, Popen
+from subprocess import (PIPE, Popen)
 
 
 logger = logging.getLogger(__name__)
@@ -27,6 +26,17 @@ NEW_LINE = '\n'
 NUM_SECTION_LINES = 1000
 HZ = os.sysconf(os.sysconf_names['SC_CLK_TCK'])
 SPAWN_TRIES = 3
+
+
+def invoke(command, _in=None):
+    '''
+    Invoke command as a new system process and return its output.
+    '''
+    process = Popen(command, stdin=PIPE, stdout=PIPE, shell=True,
+                    executable='/bin/bash')
+    if _in is not None:
+        process.stdin.write(_in)
+    return process.stdout.read()
 
 
 def strfdelta(tdelta, fmt):

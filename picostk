@@ -24,7 +24,7 @@ from picostack.deamon_app import (get_picostack_app, getBasicLogger)
 from picostack.vms.models import (VmImage, VmInstance, Flavour)
 from picostack import __version__ as PICOSTACK_VERSION
 from picostack.errors import PicoStackError
-
+from picostack.vm_builder import VmBuilder
 
 USER_HOME_DIR = os.path.expanduser('~/')
 VM_MANAGER = 'KVM'
@@ -57,8 +57,10 @@ def format_text(text):
 class MissingCliArgs(PicoStackError):
     '''Error of parsing command-line arguments.'''
 
+
 class PicoStackIOError(PicoStackError):
     '''Similar to IOError but relates to PicoStack logic.'''
+
 
 class PicoStack(object):
 
@@ -131,6 +133,9 @@ class PicoStack(object):
             print 'Creating missing folder: %s' % missing_folder
             os.mkdir(missing_folder)
 
+    def build_jeos(self):
+        vm_builder = VmBuilder()
+        vm_builder.build_jeos()
 
     @staticmethod
     def run_as_daemon(args, subparser):
@@ -200,6 +205,8 @@ class PicoStack(object):
         instance = PicoStack(args)
         if args.target == 'config':
             instance.init_config()
+        if args.target == 'jeos':
+            instance.build_jeos()
         else:
             subparser.print_help()
 
@@ -230,7 +237,7 @@ if __name__ == '__main__':
 
     # initialization routines
     init_parser = subparsers.add_parser('init')
-    init_parser.add_argument('target', choices=['config', 'UbuntuJeOS'])
+    init_parser.add_argument('target', choices=['config', 'jeos'])
     init_parser.set_defaults(handler=partial(
         PicoStack.process_init_cmds, subparser=init_parser))
 

@@ -2,22 +2,10 @@ import os
 import shutil
 import logging
 import textwrap
-from subprocess import (PIPE, Popen)
 from picostack.vms.models import VmInstance, VM_PORTS
 from process_spawn import ProcessUtil
 
 logger = logging.getLogger('picostack.application')
-
-
-def invoke(command, _in=None):
-    '''
-    Invoke command as a new system process and return its output.
-    '''
-    process = Popen(command, stdin=PIPE, stdout=PIPE, shell=True,
-                    executable='/bin/bash')
-    if _in is not None:
-        process.stdin.write(_in)
-    return process.stdout.read()
 
 
 class VmManager(object):

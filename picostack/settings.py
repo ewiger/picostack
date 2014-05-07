@@ -20,11 +20,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 SECRET_KEY = '-9@)*p*&1hk+6$2ura%9m8pf(sdz@us4p4!y%zq(#0meck2t+o'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 TEMPLATE_DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -37,6 +37,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'picostack.vms',
+    'bootstrap3',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -81,3 +82,23 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
 
 STATIC_URL = '/static/'
+
+SETTINGS_PATH = os.path.normpath(os.path.dirname(__file__))
+# Find templates in the same folder as settings.py.
+TEMPLATE_DIRS = (
+    os.path.join(SETTINGS_PATH, 'templates'),
+)
+STATICFILES_DIRS = (
+    os.path.join(SETTINGS_PATH, 'static'),
+)
+
+
+BOOTSTRAP3 = {
+    'jquery_url': STATIC_URL + 'bower_components/jquery/dist/jquery.min.js',
+    'base_url': STATIC_URL + 'bower_components/bootstrap/dist/',
+    'css_url': None,
+    'theme_url': STATIC_URL + 'bower_components/bootstrap/dist/css/bootstrap-theme.min.css',
+    'javascript_url': None,
+    'horizontal_label_class': 'col-md-2',
+    'horizontal_field_class': 'col-md-4',
+}
