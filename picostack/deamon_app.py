@@ -73,7 +73,7 @@ class PicoStackApp(object):
         self.config.set('daemon', 'pidfile_path',
                         '%(default_statepath)s/' + self.name + '.pid')
         self.config.set('daemon', 'pidfile_timeout', '5')
-        self.config.set('daemon', 'sleepping_pause', '10')
+        self.config.set('daemon', 'sleeping_pause', '10')
         # Init/set VM manager options.
         self.config.add_section('vm_manager')
         self.config.set('vm_manager', 'vm_image_path',
@@ -155,9 +155,9 @@ class PicoStackApp(object):
         while True:
             self.step()
             # Sleep x seconds.
-            sleepping_pause = self.config.getint('daemon', 'sleepping_pause')
-            logger.info('Sleeping for %d (sec)..' % sleepping_pause)
-            time.sleep(sleepping_pause)
+            sleeping_pause = self.config.getint('daemon', 'sleeping_pause')
+            logger.info('Sleeping for %d (sec)..' % sleeping_pause)
+            time.sleep(sleeping_pause)
 
 
 def get_picostack_app(app_name, config_vars, config_dir,
