@@ -9,6 +9,7 @@ class VmBuilder(object):
             sudo vmbuilder kvm ubuntu --suite quantal --flavour virtual
                 --arch i386 -o --libvirt qemu:///system
                 --bridge %(bridge_interface)s
+                --addpkg linux-image-generic
         ''' % {
             'bridge_interface': 'br0',
         })
