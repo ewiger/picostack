@@ -8,7 +8,11 @@ from picostack.vms.models import VmInstance
 class VmInstanceForm(ModelForm):
     class Meta:
         model = VmInstance
-        fields = ['name', 'current_state', 'image', 'flavour']
+        fields = [
+            'name', 'current_state', 'image', 'flavour',
+            'has_ssh', 'has_rdp', 'has_vnc',
+            #'ssh_mapping', 'rdp_mapping', 'vnc_mapping',
+        ]
     #current_state = forms.ChoiceField(widget = forms.TextInput(attrs={'readonly':'readonly'}))
 
 
