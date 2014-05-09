@@ -23,9 +23,9 @@ VM_STATES = (
 )
 
 VM_PORTS = {
-    'ssh': '22',
-    'vnc': '5900',
-    'rdp': '3389',
+    'ssh': 22,
+    'vnc': 5900,
+    'rdp': 3389,
 }
 
 DEFAULT_FLAVOUR = 'tiny'
@@ -109,7 +109,7 @@ class VmInstance(models.Model):
     def get_all_occupied_ports():
         '''Get all ports occupied by running VM instances.'''
         port_mappings = list()
-        for machine in VmInstance.objects.filter(current_state='Running'):
+        for machine in VmInstance.objects.filter(current_state=VM_IS_RUNNING):
             ports = [
                 machine.ssh_mapping,
                 machine.vnc_mapping,

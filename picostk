@@ -128,6 +128,8 @@ class PicoStack(object):
         missing_folders = [
             picostack_app.config.get('vm_manager', 'vm_image_path'),
             picostack_app.config.get('vm_manager', 'vm_disk_path'),
+            picostack_app.config.get('app', 'log_path'),
+            picostack_app.config.get('app', 'pidfiles_path'),
         ]
         for missing_folder in missing_folders:
             print 'Creating missing folder: %s' % missing_folder
@@ -153,7 +155,6 @@ class PicoStack(object):
         )
         if args.action == 'start' and is_interactive:
             picostack_app.run()
-
             return
         if args.action == 'stop' or args.action == 'restart':
             # Stop all VMs.

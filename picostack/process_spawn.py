@@ -95,7 +95,14 @@ class ProcessUtil(object):
     @classmethod
     def exec_process(cls, shell_command, report_filename, pidfile_path):
 
-        def fork_parent(shell_command, report_filename, pidfile, error_message):
+        def report_contains_error(report_filename):
+            # Implement parsing. If no error happend file will exists but will
+            # be empty. If things happens very fast but still ok  than the
+            # section after 'Process stderror was:\n' token will be empty.
+            return False
+
+        def fork_parent(shell_command, report_filename, pidfile,
+                        error_message):
             """ Fork a child process.
 
                 If the fork fails, raise a ``DaemonProcessDetachError``
@@ -107,54 +114,80 @@ class ProcessUtil(object):
                     logger.debug('Waiting for pidfile which means process '
                                  'was spawned.')
                     os.waitpid(pid, 0)
-                    if os.path.exists(pidfile.path):
+                    if os.path.exists(pidfile.path) \
+                            and os.path.exists(report_filename):
                         logger.debug('Giving it another try while waiting '
                                      'for pidfile..')
-                        return pid
+                        # Wait and parse stderr output in the log file.
+                        # Assume process spawn only if such output is empty.
+                        if not report_contains_error(report_filename):
+                            logger.debug(
+                                'Process was successfully spawned as %d' %
+                                pid
+                            )
+                            return pid
                     # Give it even more chances.. Waiting for th pidfile.
                     for try_num in xrange(SPAWN_TRIES):
-                        print '.'
-                        if os.path.exists(pidfile.path):
-                            return pid
+                        logger.debug('..retrying')
+                        if os.path.exists(pidfile.path) \
+                                and os.path.exists(report_filename):
+                            # Repeat parsing effort of the log file.
+                            if not report_contains_error(report_filename):
+                                logger.debug(
+                                    'Process was successfully spawned as %d' %
+                                    pid
+                                )
+                                return pid
                         time.sleep(1)
                     raise ExecProcessError('Failed to spawn process '
-                                           'after (%d) retries..' % SPAWN_TRIES)
+                                           'after (%d) retries..' %
+                                           SPAWN_TRIES)
                 else:
                     with DaemonContext(
                         pidfile=pidfile,
                         stdout=sys.stdout,
                         stderr=sys.stderr,
-                        detach_process=True) as process:
+                        detach_process=True,
+                    ) as process:
                         process_error = ''
                         # Write report file.
                         report = open(report_filename, 'a+')
                         started_at = datetime.now()
                         success = True
                         try:
-                            cmd_args = shell_command.split(' ')
+                            cmd_args = [arg for arg in shell_command.split(' ')
+                                        if len(arg) > 0]
                             proc = Popen(cmd_args, stdout=PIPE, stderr=PIPE)
+                            # Second pid of submissive process, that does the
+                            # actual work. Save it so it can be killed as well
+                            proc_pidfile_path = '%s_proc' % pidfile.path
+                            with open(proc_pidfile_path, 'w+') as proc_pidfile:
+                                proc_pidfile.write('%d' % proc.pid)
+                            # Do actual call.
                             process_output, process_error = proc.communicate()
                             # TODO: check return code?
                         except Exception as exception:
                             stderr = StringIO()
                             process_error = repr(exception)
                             exc_type, exc_value, exc_traceback = sys.exc_info()
-                            #traceback.print_exception(exc_type, exc_value, exc_traceback,
-                            #      limit=3, file=stderr)
+                            # traceback.print_exception(exc_type, exc_value,
+                            #                           exc_traceback,
+                            #                           limit=3, file=stderr)
                             process_error += '\n' + stderr.getvalue().strip()
                             print process_error
                             success = False
                         time.sleep(5)
                         elapsed = datetime.now() - started_at
                         # TODO: gather /proc stats for current process
-                        report.write('Elapsed time: %s \n' % \
+                        report.write('Elapsed time: %s \n' %
                                      strfdelta(elapsed, LOCAL_TIME_FMT))
                         report.write('Your job looked like:\n')
                         report.write(shell_command + '\n')
                         if success:
                             report.write('Successfully completed.\n')
                         else:
-                            report.write('Job failed with an error: %s.\n' % process_error)
+                            report.write('Job failed with an error: %s.\n' %
+                                         process_error)
                         report.write('The output (if any) follows:\n')
                         report.write('Process output was:\n')
                         report.write(process_output)
@@ -162,14 +195,15 @@ class ProcessUtil(object):
                         report.write(process_error)
                         report.close()
                     # Exit child after work is done.
-                    #os._exit(0)
                     exit(0)
             except OSError, exc:
                 exc_errno = exc.errno
                 exc_strerror = exc.strerror
                 error = ExecProcessError(
-                    "%(error_message)s: [%(exc_errno)d] %(exc_strerror)s" % vars())
+                    "%(error_message)s: [%(exc_errno)d] %(exc_strerror)s" %
+                    vars())
                 raise error
+        # Main part of exec_process()
         pidfile = None
         try:
             if os.path.exists(pidfile_path):
@@ -181,15 +215,16 @@ class ProcessUtil(object):
             # TODO: think of using os.setsid()?
             return pid
         except LockTimeout:
-            raise ExecProcessError('Process pidfile is locked: ' + pidfile_path)
+            raise ExecProcessError('Process pidfile is locked: ' +
+                                   pidfile_path)
 
     @classmethod
     def get_pidfile(cls, pidfile_path):
         '''Note that pidfile_path must be absolute'''
         return TimeoutPIDLockFile(
-                pidfile_path,
-                acquire_timeout=5,
-                threaded=False)
+            pidfile_path,
+            acquire_timeout=5,
+            threaded=False)
 
     @classmethod
     def pid_exists(cls, pid):
@@ -218,8 +253,10 @@ class ProcessUtil(object):
 
     @classmethod
     def kill_process(cls, pidfile_path):
-        assert ProcessUtil.process_runs(pidfile_path)
+        if not ProcessUtil.process_runs(pidfile_path):
+            return False
         lock_obj = ProcessUtil.get_pidfile(pidfile_path)
-        pid = lock_obj.read_pid_from_pidfile()
-        # TODO: handle kill call correctly
-        os.kill(pid, signal.SIGINT)
+        pid = lock_obj.read_pid()
+        # SIGTERM is handled by DaemonContext
+        os.kill(pid, signal.SIGTERM)
+        return True

@@ -108,6 +108,8 @@ class PicoStackApp(object):
         # Assert configuration for correctness.
         assert self.config.has_section('app')
         assert self.config.get('app', 'statepath') is not None
+        assert os.path.exists(self.config.get('app', 'log_path'))
+        assert os.path.exists(self.config.get('app', 'pidfiles_path'))
 
     @property
     def state_path(self):

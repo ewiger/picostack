@@ -1,8 +1,14 @@
 import os
 import shutil
 import logging
-import textwrap
-from picostack.vms.models import VmInstance, VM_PORTS
+from collections import deque
+from picostack.textwrap_util import wrap_multiline
+from picostack.vms.models import (
+    VmInstance, VM_PORTS,
+    VM_IN_CLONING, VM_IS_STOPPED, VM_IS_LAUNCHED, VM_IS_RUNNING,
+    VM_HAS_FAILED, VM_IS_TERMINATING, VM_IS_TRASHED,
+)
+
 from process_spawn import ProcessUtil
 
 logger = logging.getLogger('picostack.application')
@@ -12,7 +18,7 @@ class VmManager(object):
 
     def __init__(self, config):
         self.config = config
-        self.__mapping_port_range = None
+        self.__next_unmapped_port = None
 
     @property
     def vm_image_path(self):
@@ -29,12 +35,17 @@ class VmManager(object):
 
     @property
     def mapping_port_range(self):
-        if self.__mapping_port_range is None:
-            first_port = int(self.config.get('app', 'first_mapped_port'))
-            last_port = int(self.config.get('app', 'last_mapped_port'))
-            assert last_port > first_port
-            self.__mapping_port_range = range(first_port, last_port)
-        return self.__mapping_port_range
+        first_port = int(self.config.get('app', 'first_mapped_port'))
+        last_port = int(self.config.get('app', 'last_mapped_port'))
+        assert last_port > first_port
+        if self.__next_unmapped_port is None \
+                or self.__next_unmapped_port > last_port:
+            self.__next_unmapped_port = first_port
+        mapping_port_range = range(first_port, last_port)
+        result = deque(mapping_port_range)
+        shift = self.__next_unmapped_port - first_port + 1
+        result.rotate(-1 * shift)
+        return result
 
     def get_next_unmapped_port(self):
         '''
@@ -48,6 +59,7 @@ class VmManager(object):
             if next_port in already_mapped_ports:
                 continue
             # Found unmapped port.
+            self.__next_unmapped_port = next_port
             return next_port
         raise Exception('Failed to find unmapped/unoccupied port.')
 
@@ -71,7 +83,7 @@ class VmManager(object):
 
     def get_report_file(self, machine):
         logfiles_folder = self.config.get('app', 'log_path')
-        return os.path.join(pidfiles_folder, '%s.log' % machine.name)
+        return os.path.join(logfiles_folder, '%s.log' % machine.name)
 
     @classmethod
     def create(self, name, config):
@@ -81,35 +93,35 @@ class VmManager(object):
         raise Exception('Unknown VM manager: %s' % name)
 
     def build_machines(self):
-        instances = VmInstance.objects.filter(current_state='InCloning')
+        instances = VmInstance.objects.filter(current_state=VM_IN_CLONING)
         if not instances.exists():
             logger.info('Nothing to clone..')
         for machine in instances:
-            logger.info('Cloning %s' % machine.name)
+            logger.info('Cloning "%s"' % machine.name)
             self.clone_from_image(machine)
 
     def start_machines(self):
-        instances = VmInstance.objects.filter(current_state='Launched')
+        instances = VmInstance.objects.filter(current_state=VM_IS_LAUNCHED)
         if not instances.exists():
             logger.info('Nothing to start..')
         for machine in instances:
-            logger.info('Start running machine %s' % machine.name)
+            logger.info('Start running machine "%s"' % machine.name)
             self.run_machine(machine)
 
     def stop_machines(self):
-        instances = VmInstance.objects.filter(current_state='Terminating')
+        instances = VmInstance.objects.filter(current_state=VM_IS_TERMINATING)
         if not instances.exists():
             logger.info('Nothing to stop..')
         for machine in instances:
-            logger.info('Terminating machine %s' % machine.name)
+            logger.info('Terminating machine "%s"' % machine.name)
             self.stop_machine(machine)
 
     def destory_machines(self):
-        instances = VmInstance.objects.filter(current_state='Trashed')
+        instances = VmInstance.objects.filter(current_state=VM_IS_TRASHED)
         if not instances.exists():
             logger.info('Nothing to trash..')
         for machine in instances:
-            logger.info('Trashing machine %s' % machine.name)
+            logger.info('Trashing machine "%s"' % machine.name)
             self.remove_machine(machine)
 
     def run_machine(self, machine):
@@ -145,48 +157,60 @@ class Kvm(VmManager):
             redirected_ports += ' -redir tcp:%d::%d ' % (unmapped_port,
                                                          VM_PORTS[port_to_map])
         # Make a command line text with KVM call.
-        command_lines = textwrap.wrap('''
-            sudo /usr/bin/kvm -machine accel=kvm -hda %(image_path)s
+        return wrap_multiline('''
+            /usr/bin/kvm -machine accel=kvm -hda %(disk_path)s
                 -boot c
                 -m %(memory_size)s
                 -cpu qemu64 -smp %(num_of_cores)s,cores=11,sockets=1,threads=1
-                -net user -net nic,model=virtio
+                -net nic,model=virtio
                 %(redirected_ports)s
                 -usbdevice tablet
                 -vnc localhost:1
         ''' % {
-            'image_path': machine.get_image_path(),
+            'disk_path': self.get_disk_path(machine),
             'memory_size': machine.memory_size,
             'num_of_cores': machine.num_of_cores,
-            'redirected_ports': redirected_ports,
-        }, width=210, break_on_hyphens=False, break_long_words=False)
-        command = ' \\\n'.join(command_lines)
-        return command
+            'redirected_ports': '',  # redirected_ports,
+        }, separator=' ')
 
     def run_machine(self, machine):
         # Check if machine is in accepting state.
-        assert machine.current_state == 'Stopped'
+        assert machine.current_state == VM_IS_LAUNCHED
         # Bake a shell command to spawn the machine.
         shell_command = self.get_kvm_call(machine)
         logger.debug('Running VM with shell command:\n%s' % shell_command)
         #output = invoke(command)
-        report_filepath = self.get_report_file(prefix=machine.name)
+        report_filepath = self.get_report_file(machine)
         pid_filepath = self.get_pid_file(machine)
         assert not ProcessUtil.process_runs(pid_filepath)
         ProcessUtil.exec_process(shell_command, report_filepath, pid_filepath)
+        # Update state.
+        machine.change_state(VM_IS_RUNNING)
 
     def stop_machine(self, machine):
         # Check if machine is in accepting state.
-        assert machine.current_state == 'Running'
+        assert machine.current_state == VM_IS_TERMINATING
         # Kill the machine by pid.
-        pid_filepath = self.get_pid_file(machine)
-        ProcessUtil.kill_process(pid_filepath)
+        cxt_pidfile_filepath = self.get_pid_file(machine)
+        proc_pidfile_path = '%s_proc' % cxt_pidfile_filepath
+        # First kill proc which is a child and then daemoncxt.
+        if ProcessUtil.kill_process(proc_pidfile_path) \
+                and ProcessUtil.kill_process(cxt_pidfile_filepath):
+            logging.info('Succefully stoping VM processes as in %s and %s' %
+                         (proc_pidfile_path, cxt_pidfile_filepath))
+            # Proc pid should be taken care of.
+            if os.path.exists(proc_pidfile_path):
+                os.unlink(proc_pidfile_path)
+        else:
+            logging.warning('Expected VM process does not run anymore. '
+                            'Please check the log file for details: %s' %
+                            self.get_report_file(machine))
         # Update state.
-        machine.change_state('Stopped')
+        machine.change_state(VM_IS_STOPPED)
 
     def clone_from_image(self, machine):
         # Check if machine is in accepting state.
-        assert machine.current_state == 'InCloning'
+        assert machine.current_state == VM_IN_CLONING
         logger.info('Cloning new machine \'%s\' form image \'%s\'' %
                     (machine.name, machine.image.name))
         # Copy machine. Can take time.
@@ -195,12 +219,12 @@ class Kvm(VmManager):
         logger.info('Copying %s -> %s' %
                     (src_file, dst_file))
         shutil.copyfile(src_file, dst_file)
-        # Update state to 'Stopped' - we are ready to run.
-        machine.change_state('Stopped')
+        # Update state to VM_IS_STOPPED - we are ready to run.
+        machine.change_state(VM_IS_STOPPED)
 
     def remove_machine(self, machine):
         # Check if machine is in accepting state.
-        assert machine.current_state == 'Trashed'
+        assert machine.current_state == VM_IS_TRASHED
         logger.info('Removing trashed machine \'%s\' and its files: \'%s\'' %
                     (machine.name, machine.disk_filename))
         disk_file = self.get_disk_path(machine)
