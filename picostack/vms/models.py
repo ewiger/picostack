@@ -87,19 +87,19 @@ class VmInstance(models.Model):
     has_ssh = models.BooleanField(default=False)
 
     # Set by vm_manager
-    ssh_mapping = models.PositiveSmallIntegerField(null=True)
+    ssh_mapping = models.PositiveSmallIntegerField(null=True, blank=True)
 
     # has VNC ?
     has_vnc = models.BooleanField(default=False)
 
     # Set by vm_manager
-    vnc_mapping = models.PositiveSmallIntegerField(null=True)
+    vnc_mapping = models.PositiveSmallIntegerField(null=True, blank=True)
 
     # has RDP ? Set True for Windows.
     has_rdp = models.BooleanField(default=False)
 
     # Set by vm_manager
-    rdp_mapping = models.PositiveSmallIntegerField(null=True)
+    rdp_mapping = models.PositiveSmallIntegerField(null=True, blank=True)
 
     def change_state(self, state):
         self.current_state = state

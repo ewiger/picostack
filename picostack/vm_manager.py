@@ -229,5 +229,9 @@ class Kvm(VmManager):
                     (machine.name, machine.disk_filename))
         disk_file = self.get_disk_path(machine)
         os.unlink(disk_file)
+        # Clean logs.
+        report_filepath = self.get_report_file(machine)
+        if os.path.exists(report_filepath):
+            os.unlink(report_filepath)
+        # Finally kill the DB record.
         machine.delete()
-        # TODO: clean logs?
