@@ -63,7 +63,7 @@ def manage_instances(request):
     else:
         vm_instances_formset = VmInstancesFormSet()
         columns = list()
-        if vm_instances_formset.total_form_count > 0:
+        if vm_instances_formset.total_form_count() > 0:
             columns = [field.label_tag for field
                        in vm_instances_formset.forms[0].visible_fields()]
 
