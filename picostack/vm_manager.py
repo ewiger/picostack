@@ -161,7 +161,7 @@ class Kvm(VmManager):
             /usr/bin/kvm -machine accel=kvm -hda %(disk_path)s
                 -boot c
                 -m %(memory_size)s
-                -cpu qemu64 -smp %(num_of_cores)s,cores=11,sockets=1,threads=1
+                -cpu qemu64 -smp %(num_of_cores)s,cores=%(num_of_cores)s,sockets=1,threads=1
                 -net nic,model=virtio
                 %(redirected_ports)s
                 -usbdevice tablet

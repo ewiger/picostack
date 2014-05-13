@@ -13,7 +13,7 @@
 		
   	    {% if formset.total_form_count > 0 %}
 
-			<form action="/instances/" method="post" class="form">
+			<form id='instancesform' action="/instances/" method="post" class="form">
 			{{ formset.management_form }}
 	    	<table class="table table-striped">
 		    	<thead>
@@ -26,24 +26,26 @@
 		    	</thead>
 		    	<tbody>
 		        {% for form in formset %}
-		        	<tr>
-		        	
+
+				    {{ form.id }}
+		        		        	
 				    {% csrf_token %}  
 
-				    {% for field in form.visible_fields %}
+		        	<tr>
+				    {% for field in form.visible_fields %}					
 		            	<td> {{ field }} </td>
 		        	{% endfor %}
 		        		<td>
-		        			<button name="_save" type="submit" class="btn btn-default">
+		        			<button name="_save" type="submit" class="btn btn-default" value="save-{{ form.id.value }}">
 					            Save
 					        </button>
-					        <button name="_start" type="submit" class="btn btn-primary">
+					        <button name="_start" type="submit" class="btn btn-primary" value="start-{{ form.id.value }}">
 					            Start
 					        </button>
-							<button name="_stop" type="submit" class="btn btn-warning">
+							<button name="_stop" type="submit" class="btn btn-warning" value="stop-{{ form.id.value }}">
 					            Stop
 					        </button>				        
-					        <button name="_trash" type="submit" class="btn btn-danger">
+					        <button name="_trash" type="submit" class="btn btn-danger" value="trash-{{ form.id.value }}">
 					            Trash
 					        </button>
 				        </td>
@@ -53,6 +55,13 @@
 		        </tbody>
 	    	</table>
 			</form>
+
+			<script type="text/javascript"> <!--
+            $(function() {
+               $('#instancesform tbody tr').formset();
+            })
+       		--></script>
+
 
 		{% else %}
 

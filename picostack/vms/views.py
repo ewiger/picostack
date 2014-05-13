@@ -2,7 +2,8 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect
 from django import forms
 from django.forms.models import modelformset_factory, ModelForm
-from picostack.vms.models import VmInstance
+from picostack.vms.models import (VmInstance, VM_IS_LAUNCHED,
+                                  VM_IS_TERMINATING, VM_IS_TRASHED)
 
 
 class VmInstanceForm(ModelForm):
@@ -21,23 +22,44 @@ def manage_instances(request):
                                               form=VmInstanceForm,
                                               # No empty forms..
                                               extra=0)
+    def get_vm_instance(submit_id):
+        # Initialize form set and pick the index.
+            formset = VmInstancesFormSet(
+                request.POST, request.FILES,
+                queryset=VmInstance.objects.all(),
+            )
+            form_index = int(request.POST[submit_id][len(submit_id):]) - 1
+            assert form_index < len(formset.forms) and form_index >= 0
+            # Obtain corresponding model instance without saving anything.
+            form = formset.forms[form_index]
+            assert form.is_valid()
+            return form.save(commit=False)
+            # Submit VM for launching.
+            vm_instance.change_state(VM_IS_LAUNCHED)
     # If the form has been submitted...
+    # TODO: handle errors
     if request.method == 'POST':
-        # Process the data in form.cleaned_data
-        # ...
         if '_save' in request.POST:
-            return HttpResponseRedirect('/save/')
+            formset = VmInstancesFormSet(
+                request.POST, request.FILES,
+                queryset=VmInstance.objects.all(),
+            )
+            if formset.is_valid():
+                formset.save()  # FIXME: do we need to save?
         elif '_start' in request.POST:
-            return HttpResponseRedirect('/start/')
+            vm_instance = get_vm_instance(submit_id='_start')
+            # Schedule VM for start.
+            vm_instance.change_state(VM_IS_LAUNCHED)
         elif '_stop' in request.POST:
-            return HttpResponseRedirect('/stop/')
+            vm_instance = get_vm_instance(submit_id='_stop')
+            # Schedule VM for stop.
+            vm_instance.change_state(VM_IS_TERMINATING)
         elif '_trash' in request.POST:
-            return HttpResponseRedirect('/trash/')
-        return HttpResponseRedirect('/thanks/')  # Redirect after POST
-        # # ContactForm was defined in the previous section
-        # form = VmInstanceForm(request.POST)  # A form bound to the POST data
-        # # if form.is_valid():  # All validation rules pass
-        # return HttpResponseRedirect('/trash/')
+            vm_instance = get_vm_instance(submit_id='_trash')
+            # Schedule VM for complete removal.
+            vm_instance.change_state(VM_IS_TRASHED)
+        return HttpResponseRedirect('/instances/')
+
     else:
         vm_instances_formset = VmInstancesFormSet()
         columns = list()

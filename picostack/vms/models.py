@@ -101,6 +101,9 @@ class VmInstance(models.Model):
     # Set by vm_manager
     rdp_mapping = models.PositiveSmallIntegerField(null=True, blank=True)
 
+    # If left blank, then the value from get_default_disk_filename() is used.
+    disk_filename = models.CharField(max_length=120, null=True, blank=True)
+
     def change_state(self, state):
         self.current_state = state
         self.save(force_update=True)
@@ -133,8 +136,7 @@ class VmInstance(models.Model):
             raise Exception('Trying to map unknown port: %s' % vm_port)
         self.save(force_update=True)
 
-    @property
-    def disk_filename(self):
+    def get_default_disk_filename(self):
         return '%s_%s.dsk' % (self.image.image_filename, self.name)
 
     def stop(self):
@@ -182,3 +184,8 @@ class VmInstance(models.Model):
     def __str__(self):
         return '%s (%s, %s)' % (
             self.name, self.flavour.name, self.image.name)
+
+    def save(self, *args, **kwargs):
+        if self.disk_filename is None:
+            self.disk_filename = self.get_default_disk_filename()
+        super(VmInstance, self).save(*args, **kwargs)
