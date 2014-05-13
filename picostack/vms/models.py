@@ -186,6 +186,6 @@ class VmInstance(models.Model):
             self.name, self.flavour.name, self.image.name)
 
     def save(self, *args, **kwargs):
-        if self.disk_filename is None:
+        if self.disk_filename is None or self.disk_filename == '':
             self.disk_filename = self.get_default_disk_filename()
         super(VmInstance, self).save(*args, **kwargs)
