@@ -1,6 +1,8 @@
 import os
+import signal
 import shutil
 import logging
+import psutil
 from collections import deque
 from picostack.textwrap_util import wrap_multiline
 from picostack.vms.models import (
@@ -8,7 +10,6 @@ from picostack.vms.models import (
     VM_IN_CLONING, VM_IS_STOPPED, VM_IS_LAUNCHED, VM_IS_RUNNING,
     VM_HAS_FAILED, VM_IS_TERMINATING, VM_IS_TRASHED,
 )
-
 from process_spawn import ProcessUtil
 
 logger = logging.getLogger('picostack.application')
@@ -96,6 +97,7 @@ class VmManager(object):
         instances = VmInstance.objects.filter(current_state=VM_IN_CLONING)
         if not instances.exists():
             logger.info('Nothing to clone..')
+            return
         for machine in instances:
             logger.info('Cloning "%s"' % machine.name)
             self.clone_from_image(machine)
@@ -104,6 +106,7 @@ class VmManager(object):
         instances = VmInstance.objects.filter(current_state=VM_IS_LAUNCHED)
         if not instances.exists():
             logger.info('Nothing to start..')
+            return
         for machine in instances:
             logger.info('Start running machine "%s"' % machine.name)
             self.run_machine(machine)
@@ -112,6 +115,7 @@ class VmManager(object):
         instances = VmInstance.objects.filter(current_state=VM_IS_TERMINATING)
         if not instances.exists():
             logger.info('Nothing to stop..')
+            return
         for machine in instances:
             logger.info('Terminating machine "%s"' % machine.name)
             self.stop_machine(machine)
@@ -120,6 +124,7 @@ class VmManager(object):
         instances = VmInstance.objects.filter(current_state=VM_IS_TRASHED)
         if not instances.exists():
             logger.info('Nothing to trash..')
+            return
         for machine in instances:
             logger.info('Trashing machine "%s"' % machine.name)
             self.remove_machine(machine)
@@ -134,6 +139,9 @@ class VmManager(object):
         raise NotImplementedError()
 
     def remove_machine(self, vm_image):
+        raise NotImplementedError()
+
+    def kill_all_machines(self):
         raise NotImplementedError()
 
 
@@ -170,7 +178,7 @@ class Kvm(VmManager):
             'disk_path': self.get_disk_path(machine),
             'memory_size': machine.memory_size,
             'num_of_cores': machine.num_of_cores,
-            'redirected_ports': '',  # redirected_ports,
+            'redirected_ports': redirected_ports,
         }, separator=' ')
 
     def run_machine(self, machine):
@@ -235,3 +243,18 @@ class Kvm(VmManager):
             os.unlink(report_filepath)
         # Finally kill the DB record.
         machine.delete()
+
+    def kill_all_machines(self):
+        needle = self.vm_disk_path
+        machines = list()
+        for proc in psutil.process_iter():
+            try:
+                pinfo = proc.as_dict(attrs=['pid', 'cmdline'])
+            except psutil.NoSuchProcess:
+                pass
+            else:
+                if needle in ' '.join(pinfo['cmdline']):
+                    machines.append(pinfo)
+        for machine in machines:
+            os.kill(machine['pid'], signal.SIGTERM)
+

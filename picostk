@@ -21,7 +21,8 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "picostack.settings")
 sys.path.append(os.path.dirname(__file__))
 
 from picostack.deamon_app import (get_picostack_app, getBasicLogger)
-from picostack.vms.models import (VmImage, VmInstance, Flavour)
+from picostack.vms.models import (VmImage, VmInstance, Flavour, VM_IS_RUNNING,
+                                  VM_IS_TERMINATING)
 from picostack import __version__ as PICOSTACK_VERSION
 from picostack.errors import PicoStackError
 from picostack.vm_builder import VmBuilder
@@ -100,6 +101,17 @@ class PicoStack(object):
                 'name': vm_instance.name,
                 'status': vm_instance.status,
             })
+
+    def shutdown_instances(self, vm_manager):
+        instances = VmInstance.objects.filter(current_state=VM_IS_RUNNING)
+        logger.info('Shutting down all running VM instances..')
+        if not instances.exists():
+            logger.info('Nothing to stop..')
+            return
+        for machine in instances:
+            logger.info('Terminating machine "%s"' % machine.name)
+            machine.change_state(VM_IS_TERMINATING)
+            vm_manager.stop_machine(machine)
 
     def init_config(self):
         '''
@@ -211,6 +223,41 @@ class PicoStack(object):
         else:
             subparser.print_help()
 
+    def clean_log_files(self, config):
+        log_path = config.get('app', 'log_path')
+        for filename in os.listdir(log_path):
+            file_path = os.path.join(log_path, filename)
+            logger.info('Removing log: %s' % file_path)
+            os.unlink(file_path)
+
+    def clean_pid_files(self, config):
+        pidfiles_path = config.get('app', 'pidfiles_path')
+        for filename in os.listdir(pidfiles_path):
+            file_path = os.path.join(pidfiles_path, filename)
+            logger.info('Removing pid file: %s' % file_path)
+            os.unlink(file_path)
+
+    @staticmethod
+    def clean(args, subparser):
+        '''Try to clean all states, shutdown instances, remove logs, etc.'''
+        if args.target == 'all':
+            picostack_app = get_picostack_app(
+                app_name=APP_NAME,
+                config_vars=CONFIG_VARS,
+                config_dir=CONFIG_DIR,
+                is_interactive=is_interactive,
+                is_debug=DEBUG,
+            )
+
+            picostack = PicoStack(args)
+            picostack.shutdown_instances(picostack_app.vm_manager)
+            picostack.clean_log_files(picostack_app.config)
+            picostack.clean_pid_files(picostack_app.config)
+            # Also kill all VM processes on the host.
+            picostack_app.vm_manager.kill_all_machines()
+        else:
+            subparser.print_help()
+
 
 class ArgumentParser(argparse.ArgumentParser):
 
@@ -229,7 +276,6 @@ if __name__ == '__main__':
                         '-vvv DEBUG)')
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + PICOSTACK_VERSION)
-
 
     # TODO: add more sophisticated logging as in
     # http://stackoverflow.com/questions/17275334/what-is-a-correct-way-to-filter-different-loggers-using-python-logging
@@ -278,6 +324,12 @@ if __name__ == '__main__':
     instances_parser.add_argument('--stop',
                                   help='Stop VM instance.')
 
+    # state cleaning routines
+    clean_parser = subparsers.add_parser('clean')
+    clean_parser.add_argument('target', choices=['all'])
+    clean_parser.set_defaults(handler=partial(
+        PicoStack.clean, subparser=clean_parser))
+
     # Parse arguments.
     args = parser.parse_args()
     # On error this will print help and cause exit with explanation message.
@@ -287,7 +339,6 @@ if __name__ == '__main__':
             args.handler(args)
         else:
             parser.print_help()
-
     except PicoStackError as pico_error:
         print 'Failed.'
         if type(pico_error) is MissingCliArgs:

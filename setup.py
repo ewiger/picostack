@@ -49,5 +49,6 @@ setup(
         'sh >= 1.08',
         'daemoncxt >= 1.5.7',
         'Django >= 1.6.2',
+        'psutil >= 2.1.1',
     ],
 )

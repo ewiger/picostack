@@ -101,7 +101,7 @@ class ProcessUtil(object):
             # section after 'Process stderror was:\n' token will be empty.
             return False
 
-        def fork_parent(shell_command, report_filename, pidfile,
+        def fork_parent(shell_command, report_filename, pidfile_path,
                         error_message):
             """ Fork a child process.
 
@@ -114,7 +114,7 @@ class ProcessUtil(object):
                     logger.debug('Waiting for pidfile which means process '
                                  'was spawned.')
                     os.waitpid(pid, 0)
-                    if os.path.exists(pidfile.path) \
+                    if os.path.exists(pidfile_path) \
                             and os.path.exists(report_filename):
                         logger.debug('Giving it another try while waiting '
                                      'for pidfile..')
@@ -126,10 +126,10 @@ class ProcessUtil(object):
                                 pid
                             )
                             return pid
-                    # Give it even more chances.. Waiting for th pidfile.
+                    # Give it even more chances.. Waiting for the pidfile.
                     for try_num in xrange(SPAWN_TRIES):
                         logger.debug('..retrying')
-                        if os.path.exists(pidfile.path) \
+                        if os.path.exists(pidfile_path) \
                                 and os.path.exists(report_filename):
                             # Repeat parsing effort of the log file.
                             if not report_contains_error(report_filename):
@@ -144,7 +144,7 @@ class ProcessUtil(object):
                                            SPAWN_TRIES)
                 else:
                     with DaemonContext(
-                        pidfile=pidfile,
+                        pidfile=ProcessUtil.get_pidfile(pidfile_path),
                         stdout=sys.stdout,
                         stderr=sys.stderr,
                         detach_process=True,
@@ -160,7 +160,7 @@ class ProcessUtil(object):
                             proc = Popen(cmd_args, stdout=PIPE, stderr=PIPE)
                             # Second pid of submissive process, that does the
                             # actual work. Save it so it can be killed as well
-                            proc_pidfile_path = '%s_proc' % pidfile.path
+                            proc_pidfile_path = '%s_proc' % pidfile_path
                             with open(proc_pidfile_path, 'w+') as proc_pidfile:
                                 proc_pidfile.write('%d' % proc.pid)
                             # Do actual call.
@@ -204,13 +204,11 @@ class ProcessUtil(object):
                     vars())
                 raise error
         # Main part of exec_process()
-        pidfile = None
         try:
             if os.path.exists(pidfile_path):
                 raise ExecProcessError('Error! A pidfile already exists: ' +
                                        pidfile_path)
-            pidfile = cls.get_pidfile(pidfile_path)
-            pid = fork_parent(shell_command, report_filename, pidfile,
+            pid = fork_parent(shell_command, report_filename, pidfile_path,
                               error_message="Failed to fork")
             # TODO: think of using os.setsid()?
             return pid
@@ -218,8 +216,8 @@ class ProcessUtil(object):
             raise ExecProcessError('Process pidfile is locked: ' +
                                    pidfile_path)
 
-    @classmethod
-    def get_pidfile(cls, pidfile_path):
+    @staticmethod
+    def get_pidfile(pidfile_path):
         '''Note that pidfile_path must be absolute'''
         return TimeoutPIDLockFile(
             pidfile_path,
@@ -248,15 +246,15 @@ class ProcessUtil(object):
                     return True
             except ValueError:
                 return False
-        # TODO: try to acquire a lock based on pidfile?
         return False
 
     @classmethod
     def kill_process(cls, pidfile_path):
         if not ProcessUtil.process_runs(pidfile_path):
+            if os.path.exists(pidfile_path):
+                pid = int(open(pidfile_path).read())
+                logger.warn('Proccess was not found %d' % pid)
             return False
-        lock_obj = ProcessUtil.get_pidfile(pidfile_path)
-        pid = lock_obj.read_pid()
         # SIGTERM is handled by DaemonContext
         os.kill(pid, signal.SIGTERM)
         return True
