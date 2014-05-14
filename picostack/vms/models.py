@@ -101,6 +101,10 @@ class VmInstance(models.Model):
     # Set by vm_manager
     rdp_mapping = models.PositiveSmallIntegerField(null=True, blank=True)
 
+    # Vnc port in '-vnc localhost:'
+    localhost_vnc_port = models.PositiveSmallIntegerField(null=True,
+                                                          blank=True)
+
     # If left blank, then the value from get_default_disk_filename() is used.
     disk_filename = models.CharField(max_length=120, null=True, blank=True)
 
@@ -138,6 +142,14 @@ class VmInstance(models.Model):
 
     def get_default_disk_filename(self):
         return '%s_%s.dsk' % (self.image.image_filename, self.name)
+
+    def get_default_localhost_vnc_port(self):
+        allocated_ports = [machine.localhost_vnc_port for machine
+                           in VmInstance.objects.all()]
+        for port in range(1, VmInstance.objects.count()):
+            if not port in allocated_ports:
+                return port
+        return VmInstance.objects.count() + 1
 
     def stop(self):
         # Reset/free all port mappings.
@@ -188,4 +200,6 @@ class VmInstance(models.Model):
     def save(self, *args, **kwargs):
         if self.disk_filename is None or self.disk_filename == '':
             self.disk_filename = self.get_default_disk_filename()
+        if self.localhost_vnc_port is None or self.localhost_vnc_port == 0:
+            self.localhost_vnc_port = self.get_default_localhost_vnc_port()
         super(VmInstance, self).save(*args, **kwargs)

@@ -164,6 +164,7 @@ class Kvm(VmManager):
             machine.map_port(port_to_map, unmapped_port)
             redirected_ports += ' -redir tcp:%d::%d ' % (unmapped_port,
                                                          VM_PORTS[port_to_map])
+        host_vnc = '-vnc localhost:%d' % machine.localhost_vnc_port
         # Make a command line text with KVM call.
         return wrap_multiline('''
             /usr/bin/kvm -machine accel=kvm -hda %(disk_path)s
@@ -173,12 +174,13 @@ class Kvm(VmManager):
                 -net nic,model=virtio
                 %(redirected_ports)s
                 -usbdevice tablet
-                -vnc localhost:1
+                %(host_vnc)s
         ''' % {
             'disk_path': self.get_disk_path(machine),
             'memory_size': machine.memory_size,
             'num_of_cores': machine.num_of_cores,
             'redirected_ports': redirected_ports,
+            'host_vnc': host_vnc,
         }, separator=' ')
 
     def run_machine(self, machine):
