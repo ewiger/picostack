@@ -1,0 +1,28 @@
+#!/bin/sh
+#/etc/init.d/pstk
+#
+# Boot time script to run picostack on debian-like system.
+PICOSTACK=/usr/local/bin/picostk
+
+# Some things that run always
+touch /var/lock/pstk
+
+# Carry out specific functions when asked to by the system
+case "$1" in
+  start)
+    echo "Starting script pstk "
+    $PICOSTACK daemon start
+    ;;
+  stop)
+    echo "Cleaning state of the system"
+    $PICOSTACK clean all
+    echo "Stopping script pstk"
+    $PICOSTACK daemon stop
+    ;;
+  *)
+    echo "Usage: /etc/init.d/pstk {start|stop}"
+    exit 1
+    ;;
+esac
+
+exit 0

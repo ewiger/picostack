@@ -26,6 +26,8 @@ from picostack.vms.models import (VmImage, VmInstance, Flavour, VM_IS_RUNNING,
 from picostack import __version__ as PICOSTACK_VERSION
 from picostack.errors import PicoStackError
 from picostack.vm_builder import VmBuilder
+from picostack.settings import DATABASE_LOCATION
+
 
 USER_HOME_DIR = os.path.expanduser('~/')
 VM_MANAGER = 'KVM'
@@ -147,6 +149,52 @@ class PicoStack(object):
             print 'Creating missing folder: %s' % missing_folder
             os.mkdir(missing_folder)
 
+    def init_db(self):
+        '''Initialize django DB'''
+        if not os.getuid() == 0:
+            raise MissingCliArgs('Please run this command with effective uid 0'
+                                 ', e.g. `sudo picostk init db`')
+
+        def get_wwwuser_uid_gid():
+            import pwd
+            import grp
+            www_users = [
+                ('www-data', 'www-data'),
+                #('nobody', 'nogroup'),
+            ]
+            uid = None
+            gid = None
+            for username, groupname in www_users:
+                try:
+                    uid = pwd.getpwnam(username).pw_uid
+                    gid = grp.getgrnam(groupname).gr_gid
+                except KeyError:
+                    print 'Web user not found: %s, %s' % (username, groupname)
+                    continue
+            if not uid or not gid:
+                raise PicoStackError('Failed to discover the web server '
+                                     'uid,gid.')
+            return (uid, gid)
+
+        # Create a var folder for the django database if missing.
+        db_folder = os.path.dirname(DATABASE_LOCATION)
+        if not os.path.exists(db_folder):
+            os.makedirs(db_folder)
+            uid, gid = get_wwwuser_uid_gid()
+            os.chown(db_folder, uid, gid)
+            import stat
+            os.chmod(db_folder, stat.S_IRWXU + stat.S_IRWXG)
+            # Populate new empty DB with SQL, create an admin.
+            from django.core import management
+            # Allow asking user for input.
+            management.call_command('syncdb', interactive=True, verbosity='1')
+            # Finally, set www permissions and ownership.
+            os.chown(DATABASE_LOCATION, uid, gid)
+            os.chmod(DATABASE_LOCATION, stat.S_IRWXU + stat.S_IRWXG)
+        else:
+            print 'DB path already exists in folder: "%s". Remove it to ' \
+                'reinitialize DB from scratch.' % db_folder
+
     def build_jeos(self):
         vm_builder = VmBuilder()
         vm_builder.build_jeos()
@@ -218,8 +266,10 @@ class PicoStack(object):
         instance = PicoStack(args)
         if args.target == 'config':
             instance.init_config()
-        if args.target == 'jeos':
+        elif args.target == 'jeos':
             instance.build_jeos()
+        elif args.target == 'db':
+            instance.init_db()
         else:
             subparser.print_help()
 
@@ -284,7 +334,7 @@ if __name__ == '__main__':
 
     # initialization routines
     init_parser = subparsers.add_parser('init')
-    init_parser.add_argument('target', choices=['config', 'jeos'])
+    init_parser.add_argument('target', choices=['config', 'jeos', 'db'])
     init_parser.set_defaults(handler=partial(
         PicoStack.process_init_cmds, subparser=init_parser))
 

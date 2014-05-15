@@ -20,7 +20,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 SECRET_KEY = '-9@)*p*&1hk+6$2ura%9m8pf(sdz@us4p4!y%zq(#0meck2t+o'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 TEMPLATE_DEBUG = True
 
@@ -57,10 +57,12 @@ WSGI_APPLICATION = 'picostack.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
 
+# Use as location for the database file.
+DATABASE_LOCATION = '/var/picostack/db/picostk.sqlite3'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': DATABASE_LOCATION,
     }
 }
 

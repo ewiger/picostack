@@ -25,20 +25,20 @@ def readme():
 def get_version():
     src_path = os.path.join(os.path.dirname(__file__), 'picostack')
     sys.path.append(src_path)
-    import findtools
-    return findtools.__version__
+    import picostack
+    return picostack.__version__
 
 
 setup(
     name='picostack',
-    version='0.1.0',
+    version=get_version(),
     description='A super lightweight KVM virtualization manager',
     long_description=readme(),
     author='Yauhen Yakimovich',
     author_email='eugeny.yakimovitch@gmail.com',
     url='https://github.com/ewiger/picostack',
     license='MIT',
-    scripts=glob('bin/*'),
+    scripts=['picostk', 'picostk-django'],
     #data_files=glob('libexec/*'),
     packages=['picostack', 'picostack.vms'],
     package_dir={
@@ -50,5 +50,8 @@ setup(
         'daemoncxt >= 1.5.7',
         'Django >= 1.6.2',
         'psutil >= 2.1.1',
+    ],
+    data_files=[
+        ('/etc/init.d', ['pstk']),
     ],
 )
