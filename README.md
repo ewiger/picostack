@@ -25,9 +25,15 @@ ports over the network to check if the guest has complete booting.
 
 ### Adding new images
 
-```picostack init jeos 
+```bash
+picostack init jeos 
 ```
-Will attempt to use *vmbuilder* to create an example ubuntu JeOS image, which can be copied and registered in the DB. In practice, anything supported by KVM can be used as long as you can convert the disk image into [qcow2](http://www.linux-kvm.org/page/Qcow2) format (e.g. virtual box machines can be converted to be run by KVM).
+
+Will attempt to use *vmbuilder* to create an example ubuntu JeOS image, which can be copied and registered in the DB. 
+
+In practice, anything supported by KVM can be used as long as you can convert the disk image into [qcow2](http://www.linux-kvm.org/page/Qcow2) format (e.g. virtual box machines can be converted to be run by KVM).
+
+Currently, in order to register a new *image* one should use an admin part of the web interface (which is a usual django-based ORM editing interface).
 
 ## Installation
 
@@ -35,7 +41,8 @@ Will attempt to use *vmbuilder* to create an example ubuntu JeOS image, which ca
 
 Start by creating a new separate user for dedicated to run picostak daemon.
 
-```adduser pstk
+```bash
+adduser pstk
 useradd -G www-data pstk
 ```
 
@@ -46,14 +53,16 @@ where `www-data` is your apache user.
 Installation starts with obtaining a copy of picostack code either from github
 and perform a developer's installation like this:
 
-```git clone https://github.com/ewiger/picostack.git
+```bash
+git clone https://github.com/ewiger/picostack.git
 cd picostack
 pip install -e .
 ```
 
 or just give it a try your luck and directly pick a PyPI package:
 
-```pip install picostack
+```bash
+pip install picostack
 ```
 
 ## Configuration
@@ -63,13 +72,15 @@ or just give it a try your luck and directly pick a PyPI package:
 Picostack has two controlling scripts that can be used in a command line to 
 operate the program.
 
-```whereis picostk  
+```bash
+whereis picostk  
 picostk: /usr/local/bin/picostk
 ```
 
 and
 
-```whereis picostk-django
+```bash
+whereis picostk-django
 picostk-django: /usr/local/bin/picostk-django
 ```
 
@@ -86,7 +97,8 @@ Currently the configuration folder is located in ~/.picostack
 
 Calling
 
-```pip init config
+```bash
+pip init config
 sudo pip init db
 ```
 
@@ -96,7 +108,7 @@ Please navigate there and adjust it if you need to.
 You would also need to init the database. Make sure to add you picostack user () or in any other way make access to the DB file shared with apache user.
 Default location is:
 
-/var/picostack/db/picostk.sqlite3
+**/var/picostack/db/picostk.sqlite3**
 
 ### Running at boot time
 
@@ -104,12 +116,14 @@ First, make sure you have the service script placed at */etc/init.d/pstk*.
 
 Second, to install picostack service as a boot time script to be run by debian-like system one has to register it with:
 
-```update-rc.d pstk defaults
+```bash
+update-rc.d pstk defaults
 ```
 
 Removing is achieved by:
 
-```update-rc.d -f pstk remove
+```bash
+update-rc.d -f pstk remove
 ```
 
 ### Configuring apache as the webinterface
@@ -123,7 +137,7 @@ This should install and enable WSGI module in your apache: `aptitude install lib
 Once module is installed, you can adopt the following example configuration of 
 the virtual host:
 
-```#
+```xml
 # picostack virtual host: 
 <VirtualHost *:80>
 	ServerAdmin  i@am.admin
