@@ -259,3 +259,8 @@ class ProcessUtil(object):
         # SIGTERM is handled by DaemonContext
         os.kill(pid, signal.SIGTERM)
         return True
+
+    @staticmethod
+    def kill_process_pid(pid):
+        os.kill(pid, signal.SIGTERM)
+

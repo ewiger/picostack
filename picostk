@@ -14,7 +14,7 @@ import sys
 import argparse
 import logging
 from functools import partial
-from daemoncxt.runner import DaemonRunner
+from daemoncxt.runner import DaemonRunner, DaemonRunnerStopFailureError
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "picostack.settings")
 sys.path.append(os.path.dirname(__file__))
@@ -26,9 +26,10 @@ from picostack import __version__ as PICOSTACK_VERSION
 from picostack.errors import PicoStackError
 from picostack.vm_builder import VmBuilder
 from picostack.settings import DATABASE_LOCATION
-from picostack.logging_util import (set_filestream_logging,
+from picostack.logging_util import (fork_me_socket_logging,
                                     set_interactive_logging,
                                     create_example_logging_config)
+from picostack.process_spawn import ProcessUtil
 
 
 USER_HOME_DIR = os.path.expanduser('~/')
@@ -38,7 +39,7 @@ CONFIG_NAME = APP_NAME + '.conf'
 CONFIG_DIR = os.path.join(USER_HOME_DIR, '.picostack')
 DEBUG = True
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('picostack')  # Match logging qualification name.
 is_interactive = False
 LINE_WIDTH = 80
 CONFIG_VARS = {
@@ -71,6 +72,7 @@ class PicoStack(object):
 
     def __init__(self, options):
         self.options = options
+        self.logging_server_pid = None
 
     def list_images(self):
         if len(VmImage.objects.all()) == 0:
@@ -217,34 +219,49 @@ class PicoStack(object):
             is_interactive=is_interactive,
             is_debug=DEBUG,
         )
-        if not is_interactive:
-            set_filestream_logging(picostack_app.config.get(
-                                   'app', 'logging_config_path'))
+        picostack = PicoStack(picostack_app.config)
+        if not is_interactive and args.action == 'start':
+            # Django as well as python has no locking for logging.
+            # Fork logging server next to the daemon process to handle logging
+            # in parallel.
+            logging_config_filename = picostack_app.config.get(
+                'app', 'logging_config_path')
+            picostack.logging_server_pid = fork_me_socket_logging(
+                logging_config_filename)
         if args.action == 'start' and is_interactive:
             picostack_app.run()
             return
         if args.action == 'stop' or args.action == 'restart':
             # Stop all VMs.
-            pass
+            picostack.shutdown_instances(picostack_app.vm_manager)
         # Note: picostack daemon app will find pid and kill the process or
         # start a new one. We just need to pass the action.
         app_argv = [sys.argv[0], args.action]
         daemon_runner = DaemonRunner(picostack_app, app_argv)
-        # daemon_runner.daemon_context.default_terminate = \
-        #     daemon_runner.daemon_context.terminate
-        # daemon_runner.daemon_context.terminate = partial(
-        #     PicoStack.terminate_daemon,
-        #     daemon_context=daemon_runner.daemon_context,
-        # )
-        daemon_runner.do_action()
+        # Trap to run overridden daemon termination.
+        daemon_runner.daemon_context.default_terminate = \
+            daemon_runner.daemon_context.terminate
+        daemon_runner.daemon_context.terminate = partial(
+            PicoStack.terminate_daemon,
+            daemon_context=daemon_runner.daemon_context,
+            picostack=picostack,
+        )
+        # Pass action to be performed.
+        try:
+            daemon_runner.do_action()
+        except DaemonRunnerStopFailureError as err:
+            print 'No picostack daemon is running. %s' % str(err)
 
-    # @staticmethod
-    # def terminate_daemon(signal_number, stack_frame, daemon_context):
-    #     # Close all db connections.
-    #     from django.db import connection
-    #     connection.close()
-    #     # Finally call original method.
-    #     daemon_context.default_terminate(signal_number, stack_frame)
+    @staticmethod
+    def terminate_daemon(signal_number, stack_frame, daemon_context,
+                         picostack):
+        # Close all db connections.
+        from django.db import connection
+        connection.close()
+        # Kill logging server.
+        ProcessUtil.kill_process_pid(picostack.logging_server_pid)
+        # Finally call original method.
+        daemon_context.default_terminate(signal_number, stack_frame)
 
     @staticmethod
     def process_image_cmds(args, subparser):
@@ -342,7 +359,7 @@ if __name__ == '__main__':
                             + ' - a minimalistic KVM manager.')
     parser.add_argument('-i', '--interactive', action='store_true',
                         default=False)
-    parser.add_argument("-v", "--verbosity", action="count", default=0,
+    parser.add_argument("-v", "--verbosity", action="count", default=1,
                         help='Increase logging verbosity (-v WARN, -vv INFO, '
                         '-vvv DEBUG)')
     parser.add_argument('--version', action='version',
