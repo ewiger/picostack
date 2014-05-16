@@ -2,32 +2,11 @@ import ConfigParser
 import os
 import time
 import logging
-
 from picostack.vm_manager import VmManager
 
 
-logger = logging.getLogger('picostack.application')
-
-
+logger = logging.getLogger(__name__)
 USER_HOME_DIR = os.path.expanduser('~/')
-# TODO: use dictConfig http://docs.python.org/2/library/logging.config.html
-LOGGING_LEVELS = {
-    'NOTSET': logging.NOTSET,
-    'WARN': logging.WARN,
-    'INFO': logging.INFO,
-    'DEBUG': logging.DEBUG,
-}
-
-
-def getBasicLogger(name, level):
-    logging.basicConfig(level=level,
-                        format='%(asctime)s %(name)-20s %(levelname)-8s '
-                               '%(message)s',
-                        datefmt='%m-%d %H:%M')
-    console = logging.StreamHandler()
-    console.setLevel(level)
-    logger = logging.getLogger(name)
-    return logger
 
 
 class PicoStackApp(object):
@@ -63,6 +42,8 @@ class PicoStackApp(object):
                         '10000')
         self.config.set('app', 'last_mapped_port',
                         '10100')
+        self.config.set('app', 'logging_config_path',
+                        '%(default_statepath)s/logging.conf')
         # Init/set dameon options.
         self.config.add_section('daemon')
         self.config.set('daemon', 'stdin_path', '/dev/null')
@@ -110,6 +91,7 @@ class PicoStackApp(object):
         assert self.config.get('app', 'statepath') is not None
         assert os.path.exists(self.config.get('app', 'log_path'))
         assert os.path.exists(self.config.get('app', 'pidfiles_path'))
+        assert os.path.exists(self.config.get('app', 'logging_config_path'))
 
     @property
     def state_path(self):

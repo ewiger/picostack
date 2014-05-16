@@ -12,7 +12,7 @@ from picostack.vms.models import (
 )
 from process_spawn import ProcessUtil
 
-logger = logging.getLogger('picostack.application')
+logger = logging.getLogger(__name__)
 
 
 class VmManager(object):
