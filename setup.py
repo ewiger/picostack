@@ -39,7 +39,12 @@ setup(
     url='https://github.com/ewiger/picostack',
     license='MIT',
     scripts=['picostk', 'picostk-django', 'pstk'],
-    packages=['picostack', 'picostack.vms'],
+    packages=[
+        'picostack', 'picostack.vms',
+    ],
+    package_data={
+        '': ['*.html', '*.svg', '*.js'],
+    },
     include_package_data=True,
     download_url='https://github.com/ewiger/picostack/tarball/master',
     install_requires=[
@@ -47,8 +52,20 @@ setup(
         'daemoncxt >= 1.5.7',
         'Django >= 1.6.2',
         'psutil >= 2.1.1',
+        'django-bootstrap3 >= 4.4.1',
     ],
     data_files=[
         ('/etc/init.d', ['pstk']),
+    ],
+    classifiers=[
+        'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
+        'Topic :: System :: Emulators',
+        'Intended Audience :: Developers',
+        'Intended Audience :: System Administrators',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2.7',
+        'Framework :: Django',
+        'Development Status :: 4 - Beta',
+        'Operating System :: POSIX :: Linux',
     ],
 )

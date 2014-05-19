@@ -1,0 +1,6 @@
+include AUTHORS
+include LICENSE
+include README.md
+include pstk
+recursive-include picostack/static *
+recursive-include picostack/templates *

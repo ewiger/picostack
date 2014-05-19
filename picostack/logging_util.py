@@ -123,7 +123,7 @@ def create_example_logging_config(logging_config_filename):
         ''' % {
             'logs_path': os.path.dirname(logging_config_filename),
         }) + textwrap.dedent('''
-        [formatter_simpleFormatter]
+        [formatter_trivial]
         format=%(asctime)s - %(name)s - %(levelname)s - %(message)s
         datefmt=
         '''))

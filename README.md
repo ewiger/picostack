@@ -10,7 +10,7 @@ A super lightweight KVM virtualization manager suitable for single linux-based h
 * has web-interface to manipulate execution of VMs (in a fashion motivated 
   by OpenStack)
 * powered by *django* framework 
-* allow mapping of network ports from guest system into the host system
+* allows mapping of network ports from guest system into the host system
 
 Note that picostack is conceived as a virtualization manager - not a cloud 
 service provider' software, but a single server split of available resources.
@@ -43,10 +43,17 @@ Start by creating a new separate user for dedicated to run picostak daemon.
 
 ```bash
 adduser pstk
-useradd -G www-data pstk
+sudo usermod -a -G www-data pstk
 ```
 
 where `www-data` is your apache user.
+
+### Debian prerequisites
+
+```bash
+sudo apt-get install python-dev
+```
+
 
 ### Get a copy of picostack
 
@@ -98,8 +105,8 @@ Currently the configuration folder is located in ~/.picostack
 Calling
 
 ```bash
-pip init config
-sudo pip init db
+picostk init config
+sudo picostk init db
 ```
 
 will populate the configuration folder with some default settings.
