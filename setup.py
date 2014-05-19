@@ -38,7 +38,7 @@ setup(
     author_email='eugeny.yakimovitch@gmail.com',
     url='https://github.com/ewiger/picostack',
     license='MIT',
-    scripts=['picostk', 'picostk-django', 'pstk'],
+    scripts=['picostk', 'picostk-django'],
     packages=[
         'picostack', 'picostack.vms',
     ],
