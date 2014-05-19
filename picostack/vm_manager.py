@@ -171,7 +171,7 @@ class Kvm(VmManager):
                 -boot c
                 -m %(memory_size)s
                 -cpu qemu64 -smp %(num_of_cores)s,cores=%(num_of_cores)s,sockets=1,threads=1
-                -net nic,model=virtio
+                -net nic,model=virtio -net user
                 %(redirected_ports)s
                 -usbdevice tablet
                 %(host_vnc)s
