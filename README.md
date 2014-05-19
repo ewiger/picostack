@@ -161,6 +161,9 @@ the virtual host:
 	<Directory "/usr/local/lib/python2.7/dist-packages/picostack/">		
 		<Files wsgi.py>
 			Require all granted
+			# For apache <= 2.4 uncomment and use lines below instead
+	        # Order allow,deny
+	        # Allow from all			
 		</Files>
 	</Directory>
 
@@ -168,12 +171,18 @@ the virtual host:
 	
 	<Directory "/usr/local/lib/python2.7/dist-packages/django/contrib/admin/static/admin/">
 		Require all granted
+		# For apache <= 2.4 uncomment and use lines below instead
+        # Order allow,deny
+        # Allow from all		
 	</Directory>
 
 	Alias /static/ /usr/local/lib/python2.7/dist-packages/picostack/static/
 
 	<Directory "/usr/local/lib/python2.7/dist-packages/picostack/static/">
 		Require all granted
+		# For apache <= 2.4 uncomment and use lines below instead
+        # Order allow,deny
+        # Allow from all
 	</Directory>
 </VirtualHost>
 ```

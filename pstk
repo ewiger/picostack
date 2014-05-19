@@ -3,6 +3,9 @@
 #
 # Boot time script to run picostack on debian-like system.
 PICOSTACK=/usr/local/bin/picostk
+GRP=www-data
+USER=pstk
+SUDO="/usr/bin/sudo -g $GRP -u $USER "
 
 # Some things that run always
 touch /var/lock/pstk
@@ -11,13 +14,13 @@ touch /var/lock/pstk
 case "$1" in
   start)
     echo "Starting script pstk "
-    $PICOSTACK daemon start
+    $SUDO $PICOSTACK daemon start
     ;;
   stop)
     echo "Cleaning state of the system"
-    $PICOSTACK clean all
+    $SUDO $PICOSTACK clean all
     echo "Stopping script pstk"
-    $PICOSTACK daemon stop
+    $SUDO $PICOSTACK daemon stop
     ;;
   *)
     echo "Usage: /etc/init.d/pstk {start|stop}"
