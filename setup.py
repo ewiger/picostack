@@ -38,12 +38,9 @@ setup(
     author_email='eugeny.yakimovitch@gmail.com',
     url='https://github.com/ewiger/picostack',
     license='MIT',
-    scripts=['picostk', 'picostk-django'],
-    #data_files=glob('libexec/*'),
+    scripts=['picostk', 'picostk-django', 'pstk'],
     packages=['picostack', 'picostack.vms'],
-    package_dir={
-        'picostack': 'picostack',
-    },
+    include_package_data=True,
     download_url='https://github.com/ewiger/picostack/tarball/master',
     install_requires=[
         'sh >= 1.08',
