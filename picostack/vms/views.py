@@ -2,6 +2,8 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect
 from django import forms
 from django.forms.models import modelformset_factory, ModelForm
+from django.contrib.auth import logout
+from django.contrib.auth.decorators import login_required
 from picostack.vms.models import (VmInstance, VM_IS_LAUNCHED,
                                   VM_IS_TERMINATING, VM_IS_TRASHED)
 
@@ -17,6 +19,12 @@ class VmInstanceForm(ModelForm):
     #current_state = forms.ChoiceField(widget = forms.TextInput(attrs={'readonly':'readonly'}))
 
 
+def logout_view(request):
+    logout(request)
+    return HttpResponseRedirect('/instances/')
+
+
+@login_required
 def manage_instances(request):
     VmInstancesFormSet = modelformset_factory(model=VmInstance,
                                               form=VmInstanceForm,
@@ -67,7 +75,7 @@ def manage_instances(request):
             columns = [field.label_tag for field
                        in vm_instances_formset.forms[0].visible_fields()]
 
-    return render(request, 'instances.html', {
+    return render(request, 'instances/view.html', {
         'formset': vm_instances_formset,
         'columns': columns,
     })

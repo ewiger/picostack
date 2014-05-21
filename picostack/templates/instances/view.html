@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+
+{% block title %}manage instances{% endblock %}
+
+{% load bootstrap3 %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+
+  	<div class="col-md-2"></div>
+
+  	<div class="col-md-8" id="instances_list"></div>
+
+	<div class="col-md-2"></div>
+
+	</div>
+</div>
+
+{% endblock %}
+
+
+{% block bottomjs %}
+<script type="text/javascript"> <!--
+	// jQuery( document ).ready(function( $ ) {
+	//    $('#instancesform tbody tr').formset();
+	// });
+	// refresh page every 10 sec.
+
+	// setInterval(function(){
+	// 	location.reload();
+	// }, 4000);
+--></script>
+{% endblock %}

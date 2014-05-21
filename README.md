@@ -15,6 +15,14 @@ A super lightweight KVM virtualization manager suitable for single linux-based h
 Note that picostack is conceived as a virtualization manager - not a cloud 
 service provider' software, but a single server split of available resources.
 
+---
+Copyright (c) 2014 Yauhen Yakimovich
+
+Licensed under the MIT License (MIT). Read a copy of LICENSE distributed with 
+this code.
+
+---
+
 ### Creating VM instances by cloning
 
 To produce a new VM instance one should always clone a previously registered 
@@ -192,6 +200,7 @@ user's home folder and picostack.mysite.org is the website URL to be installed
 to.
 
 For further details follow [modwsgi documantaion on django page](https://docs.djangoproject.com/en/1.6/howto/deployment/wsgi/modwsgi/).
+
 
 ---
 wbr, yy
