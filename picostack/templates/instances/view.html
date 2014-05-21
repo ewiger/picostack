@@ -9,7 +9,8 @@
 
   	<div class="col-md-2"></div>
 
-  	<div class="col-md-8" id="instances_list"></div>
+  	<div class="col-md-8" id="instances_list">
+  	{% include "instances/list.html" %}
 
 	<div class="col-md-2"></div>
 
@@ -21,13 +22,43 @@
 
 {% block bottomjs %}
 <script type="text/javascript"> <!--
-	// jQuery( document ).ready(function( $ ) {
-	//    $('#instancesform tbody tr').formset();
-	// });
-	// refresh page every 10 sec.
-
-	// setInterval(function(){
-	// 	location.reload();
-	// }, 4000);
+	jQuery( document ).ready(function( $ ) {
+		// TODO: Try this?
+	   	//$('#instancesform tbody tr').formset();
+	   	window.picostackRefreshWorkerFn = function () {
+			$.ajax({
+				url: "/list_instances",
+				success: function( data ) {
+		    		// if ( console && console.log ) {
+			        // 	    console.log( "data:", data);
+		    		// }
+		    		$('#instances_list').hide().html(data).fadeIn();
+	  			},
+	  			complete: function() {
+	  				// TODO: update html with data only if string hash is different.
+	  				// Add click handler to the refresh button.
+		  			$('#refreshInstancesButton').on('click', function (e) {
+			  			clearTimeout(window.picostackRefreshWorkerTimer);
+			  			picostackRefreshWorkerFn();  			
+					});
+		     		// Schedule the next request when the current one's complete.
+	    	  		window.picostackRefreshWorkerTimer = setTimeout(window.picostackRefreshWorkerFn, 5000);
+		    	}
+		    });
+	    };
+	    picostackRefreshWorkerFn();
+	    $('#instances_list').hover(
+	    	function () {
+	    		// Block refresh if user has his mouse on top of the form.
+	    		clearTimeout(window.picostackRefreshWorkerTimer);
+	   		},
+	    	function () {
+	    		// Continue refreshing when user leaves the form.
+				window.picostackRefreshWorkerTimer = setTimeout(window.picostackRefreshWorkerFn, 5000);
+	   		}
+	    );
+	 
+	});	
 --></script>
+
 {% endblock %}

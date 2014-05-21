@@ -1,3 +1,5 @@
+{% load bootstrap3 %}
+
 {% if formset.total_form_count > 0 %}
 
 	<form id='instancesform' action="/instances/" method="post" class="form">
@@ -45,7 +47,8 @@
 
 
 	
-
+	<div><button id="refreshInstancesButton" class="btn btn-success">Refresh</button></div>
+	  	</div>
 
 
 {% else %}
