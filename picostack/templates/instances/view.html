@@ -26,6 +26,14 @@
 		// TODO: Try this?
 	   	//$('#instancesform tbody tr').formset();
 	   	window.picostackRefreshWorkerFn = function () {
+	   		// Loop through each popover on the page
+			$("[data-toggle=popover]").each(function() {
+			    // Hide this popover if it's visible and if the user clicked outside of it
+			    // if ($(this).next('div.popover:visible').length && $(".popover").has(e.target).length === 0) {
+			    $(this).popover("hide");
+			    // }
+		  	});		
+  			// Do ajax request.
 			$.ajax({
 				url: "/list_instances",
 				success: function( data ) {
@@ -36,6 +44,10 @@
 	  			},
 	  			complete: function() {
 	  				// TODO: update html with data only if string hash is different.
+	  				// For connection instructions.
+	  				$("[data-toggle='popover']").popover({
+ 					   container: 'body'
+					});
 	  				// Add click handler to the refresh button.
 		  			$('#refreshInstancesButton').on('click', function (e) {
 			  			clearTimeout(window.picostackRefreshWorkerTimer);

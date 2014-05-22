@@ -10,7 +10,7 @@
 
     <!-- Bootstrap -->    
     {% bootstrap_css %}
-        
+    <link href="{% static "pstk.css"%}" media="screen" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -30,6 +30,17 @@
     {# Load JS #}
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="{% static "bower_components/jquery/dist/jquery.min.js" %}"></script>
+    <script src="{% static "bower_components/bootstrap/js/tooltip.js" %}"></script>
+    <script src="{% static "bower_components/bootstrap/js/popover.js" %}"></script>
+    <script type="text/javascript"> <!--
+      jQuery( document ).ready(function( $ ) {
+        // $("[data-toggle='tooltip']").tooltip();
+        $("[data-toggle='popover']").popover({
+          container: 'body'
+        });
+      });
+    -->
+    </script>
     {% bootstrap_javascript %}    
     {% block bottomjs %}     
     {% endblock %}
