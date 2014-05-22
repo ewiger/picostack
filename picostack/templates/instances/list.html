@@ -37,7 +37,7 @@
 			        <button name="_trash" type="submit" class="btn btn-danger" value="trash-{{ form.id.value }}">
 			            Trash
 			        </button>			        
-			        <button type="button" class="btn btn-default btn-lg" data-toggle="popover" data-placement="bottom" data-title="How to connect" data-container="body" data-html="true" data-content="Run this command in your terminal: &lt;br&gt; &lt;strong&gt;curl&nbsp;{{ request.build_absolute_uri }}connect?name={{ form.name.value }}&nbsp;|&nbsp;bash&lt;/strong&gt;">
+			        <button type="button" class="btn btn-default btn-lg" data-toggle="popover" data-placement="bottom" data-title="How to connect" data-container="body" data-html="true" data-content="Run this command in your terminal: &lt;br&gt; &lt;strong&gt;curl&nbsp;{{ connect_url }}?name={{ form.name.value }}&nbsp;|&nbsp;bash&lt;/strong&gt;">
   						<span class="glyphicon glyphicon-log-in"></span>
 					</button>
 		        </td>

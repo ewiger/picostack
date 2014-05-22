@@ -5,9 +5,10 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
-    url(r'^$', RedirectView.as_view(url='/instances', permanent=False), name='instances'),
-    url(r'^list_instances/', 'picostack.vms.views.list_instances', name='instances'),
-    url(r'^instances/', 'picostack.vms.views.manage_instances', name='instances'),
+    url(r'^$', RedirectView.as_view(url='/instances', permanent=False), name='home'),
+    url(r'^connect_instance/', 'picostack.vms.views.get_connection_details', name='connect_instance'),
+    url(r'^list_instances/', 'picostack.vms.views.list_instances', name='list_instance'),
+    url(r'^instances/', 'picostack.vms.views.manage_instances', name='view_instances'),
     url(r'^logout/', 'picostack.vms.views.logout_view', name='logout'),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^accounts/login/$', 'django.contrib.auth.views.login',

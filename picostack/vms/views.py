@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django import forms
 from django.forms.models import modelformset_factory, ModelForm
 from django.contrib.auth import logout
@@ -61,6 +61,36 @@ def logout_view(request):
     return HttpResponseRedirect('/instances/')
 
 
+def get_connection_details(request):
+    if not request.GET.has_key('name'):
+        raise Exception('Missing instance name')
+    try:
+        vm_instance = VmInstance.objects.get(name=request.GET['name'])
+    except VmInstance.DoesNotExist:
+        return HttpResponse('# Error. VM was not found by name: %s' %
+                            request.GET['name'])
+    hostname = request.get_host()
+    if ':' in hostname:
+        hostname = hostname[:hostname.index(':')]
+
+    connection_str = 'ssh -T %s' % hostname
+    port_mapping_template = '-L %d:localhost:%d'
+    mappings = list()
+    if vm_instance.has_vnc:
+        mappings.append(port_mapping_template %
+                        (vm_instance.vnc_mapping,
+                         vm_instance.vnc_mapping))
+    if vm_instance.has_ssh:
+        mappings.append(port_mapping_template %
+                        (vm_instance.ssh_mapping,
+                         vm_instance.ssh_mapping))
+    if vm_instance.has_rdp:
+        mappings.append(port_mapping_template %
+                        (vm_instance.rdp_mapping,
+                         vm_instance.rdp_mapping))
+    return HttpResponse(' '.join([connection_str] + mappings + ['\n']))
+
+
 @login_required
 def manage_instances(request):
     # TODO: handle errors
@@ -93,4 +123,8 @@ def manage_instances(request):
 @login_required
 def list_instances(request):
     # Render the template as response.
-    return render(request, 'instances/list.html', get_view_context())
+    context = get_view_context()
+    context.update({
+        'connect_url': request.build_absolute_uri('/connect_instance/'),
+    })
+    return render(request, 'instances/list.html', context)
