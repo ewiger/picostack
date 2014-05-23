@@ -40,7 +40,7 @@ setup(
     license='MIT',
     scripts=['picostk', 'picostk-django'],
     packages=[
-        'picostack', 'picostack.vms',
+        'picostack', 'picostack.vms', 'picostack.vms.templatetags',
     ],
     package_data={
         '': ['*.html', '*.svg', '*.js'],
