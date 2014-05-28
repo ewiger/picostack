@@ -15,6 +15,9 @@ A super lightweight KVM virtualization manager suitable for single linux-based h
 Note that picostack is conceived as a virtualization manager - not a cloud 
 service provider' software, but a single server split of available resources.
 
+![alt text](https://raw.githubusercontent.com/ewiger/picostack/master/doc/screen1.png "Screenshot of the web-interface with the overview of running VM instances")
+
+
 ---
 Copyright (c) 2014 Yauhen Yakimovich
 
@@ -52,6 +55,7 @@ Start by creating a new separate user for dedicated to run picostak daemon.
 ```bash
 adduser pstk
 sudo usermod -a -G www-data pstk
+sudo usermod -a -G kvm pstk
 ```
 
 where `www-data` is your apache user.
