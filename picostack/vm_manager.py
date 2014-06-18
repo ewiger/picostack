@@ -73,7 +73,7 @@ class UbuntuKvm(CallBuilder):
         CallBuilder.configure(self)
         # Continue with ubuntu scenario
         self.parameters['net'].append('nic,model=virtio')
-        self.parameters['ballon'] = 'virtio'
+        self.parameters['balloon'] = 'virtio'
 
 
 class DebianKvm(CallBuilder):
@@ -84,7 +84,7 @@ class DebianKvm(CallBuilder):
         self.executable = '/usr/bin/qemu-system-x86_64 -enable-kvm'
         # Continue with debian scenario
         self.parameters['net'].append('nic,model=virtio')
-        self.parameters['ballon'] = 'virtio'
+        self.parameters['balloon'] = 'virtio'
 
 
 class VmManager(object):
@@ -96,7 +96,7 @@ class VmManager(object):
 
     @property
     def call_builder_name(self):
-        if self.config.has_options('vm_manager', 'call_builder'):
+        if self.config.has_option('vm_manager', 'call_builder'):
             return self.config.get('vm_manager', 'call_builder')
         return 'ubuntu_kvm'
 
