@@ -15,11 +15,90 @@ from process_spawn import ProcessUtil
 logger = logging.getLogger(__name__)
 
 
+class CallBuilder(object):
+    '''
+    Many host systems differ in a way the run kvm. This helper class provides
+    generic workarounds for construction of command line parameters according
+    to such differences.
+    '''
+    def __init__(self):
+        self.executable = None
+        self.parameters = dict()
+        self.configure()
+
+    @classmethod
+    def factory(cls, builder_name):
+        if builder_name == 'ubuntu_kvm':
+            return UbuntuKvm()
+        elif builder_name == 'debian_kvm':
+            return DebianKvm()
+        raise Exception('Unknown call builder name: %s' % builder_name)
+
+    def build_params(self):
+        options = list()
+        for key in self.parameters:
+            value = self.parameters[key]
+            if type(value) == list:
+                for subvalue in value:
+                    options.append('-' + key + ' ' + subvalue)
+            else:
+                options.append('-' + key + ' ' + value)
+        return ' '.join(options)
+
+    def get_call(self, substitute_vars):
+        '''Make a command line text with VM call.'''
+        return self.executable + ' ' + self.build_params() % substitute_vars
+
+    def configure(self):
+        '''Configure command line builder with default set of parameters.'''
+        self.parameters['machine'] = 'accel=kvm'
+        self.parameters['hda'] = '%(disk_path)s'
+        self.parameters['boot'] = 'c'
+        self.parameters['m'] = '%(memory_size)s'
+        self.parameters['cpu'] = 'qemu64'
+        self.parameters['smp'] = '%(num_of_cores)s,cores=%(num_of_cores)s,'\
+            + 'sockets=1,threads=1'
+        self.parameters['net'] = ['user', 'nic,model=virtio']
+        self.parameters['usbdevice'] = 'tablet'
+        self.parameters['no-shutdown'] = ''
+
+
+class UbuntuKvm(CallBuilder):
+
+    def __init__(self):
+        CallBuilder.__init__(self)
+        self.executable = '/usr/bin/kvm'
+
+    def configure(self):
+        CallBuilder.configure(self)
+        # Continue with ubuntu scenario
+        self.parameters['net'].append('nic,model=virtio')
+        self.parameters['ballon'] = 'virtio'
+
+
+class DebianKvm(CallBuilder):
+
+    def configure(self):
+        CallBuilder.configure(self)
+        # change executable
+        self.executable = '/usr/bin/qemu-system-x86_64 -enable-kvm'
+        # Continue with debian scenario
+        self.parameters['net'].append('nic,model=virtio')
+        self.parameters['ballon'] = 'virtio'
+
+
 class VmManager(object):
 
     def __init__(self, config):
         self.config = config
         self.__next_unmapped_port = None
+        self.call_builder = CallBuilder.factory(self.call_builder_name)
+
+    @property
+    def call_builder_name(self):
+        if self.config.has_options('vm_manager', 'call_builder'):
+            return self.config.get('vm_manager', 'call_builder')
+        return 'ubuntu_kvm'
 
     @property
     def vm_image_path(self):
@@ -166,22 +245,14 @@ class Kvm(VmManager):
                                                          VM_PORTS[port_to_map])
         host_vnc = '-vnc localhost:%d' % machine.localhost_vnc_port
         # Make a command line text with KVM call.
-        return wrap_multiline('''
-            /usr/bin/kvm -machine accel=kvm -hda %(disk_path)s
-                -boot c
-                -m %(memory_size)s
-                -cpu qemu64 -smp %(num_of_cores)s,cores=%(num_of_cores)s,sockets=1,threads=1
-                -net nic,model=virtio -net user
-                %(redirected_ports)s
-                -usbdevice tablet
-                %(host_vnc)s
-        ''' % {
+        return self.call_builder.get_call({
             'disk_path': self.get_disk_path(machine),
             'memory_size': machine.memory_size,
             'num_of_cores': machine.num_of_cores,
             'redirected_ports': redirected_ports,
             'host_vnc': host_vnc,
-        }, separator=' ')
+        }) + ' '.join([redirected_ports, host_vnc])
+
 
     def run_machine(self, machine):
         # Check if machine is in accepting state.

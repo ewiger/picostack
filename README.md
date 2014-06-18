@@ -205,6 +205,16 @@ to.
 
 For further details follow [modwsgi documantaion on django page](https://docs.djangoproject.com/en/1.6/howto/deployment/wsgi/modwsgi/).
 
+## Running tests
+
+There are a bunch of nose tests inside *tests* folder. A quick start to run
+them:
+
+```bash
+pip install nose
+cd tests/
+nosetests
+```
 
 ---
 wbr, yy
