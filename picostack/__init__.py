@@ -1,2 +1,2 @@
 # Make sure to increment this when updating the PyPI entry of the package.
-__version__ = '0.1.9'
+__version__ = '0.1.10'

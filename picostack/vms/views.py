@@ -18,10 +18,15 @@ class VmInstanceForm(ModelForm):
         ]
 
 
+def enumerate_forms(self):
+        return enumerate(self.forms)
+
+
 VmInstancesFormSet = modelformset_factory(model=VmInstance,
                                           form=VmInstanceForm,
                                           # No empty forms..
                                           extra=0)
+VmInstancesFormSet.enumerate_forms = enumerate_forms
 
 
 def get_vm_instance(request, submit_id):
@@ -30,7 +35,7 @@ def get_vm_instance(request, submit_id):
         request.POST, request.FILES,
         queryset=VmInstance.objects.all(),
     )
-    form_index = int(request.POST[submit_id][len(submit_id):]) - 1
+    form_index = int(request.POST[submit_id][len(submit_id):])
     assert form_index < len(formset.forms) and form_index >= 0
     # Obtain corresponding model instance without saving anything.
     form = formset.forms[form_index]
@@ -51,6 +56,7 @@ def get_view_context():
         'columns': columns,
     }
 
+
 #
 # Views
 #
@@ -60,7 +66,7 @@ def logout_view(request):
 
 
 def get_connection_details(request):
-    if not request.GET.has_key('name'):
+    if not 'name' in request.GET:
         raise Exception('Missing instance name')
     try:
         vm_instance = VmInstance.objects.get(name=request.GET['name'])
