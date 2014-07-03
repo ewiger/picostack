@@ -309,7 +309,11 @@ class Kvm(VmManager):
         logger.info('Removing trashed machine \'%s\' and its files: \'%s\'' %
                     (machine.name, machine.disk_filename))
         disk_file = self.get_disk_path(machine)
-        os.unlink(disk_file)
+        try:
+            os.unlink(disk_file)
+        except IOError:
+            logger.info('Failed to remove the VM\'s disk: %s' % disk_file,
+                        exc_info=True)
         # Clean logs.
         report_filepath = self.get_report_file(machine)
         if os.path.exists(report_filepath):

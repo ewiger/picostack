@@ -18,15 +18,16 @@ class VmInstanceForm(ModelForm):
         ]
 
 
-def enumerate_forms(self):
+DefaultVmInstancesFormSet = modelformset_factory(model=VmInstance,
+                                                 form=VmInstanceForm,
+                                                 # No empty forms..
+                                                 extra=0)
+
+
+class VmInstancesFormSet(DefaultVmInstancesFormSet):
+
+    def enumerate_forms(self):
         return enumerate(self.forms)
-
-
-VmInstancesFormSet = modelformset_factory(model=VmInstance,
-                                          form=VmInstanceForm,
-                                          # No empty forms..
-                                          extra=0)
-VmInstancesFormSet.enumerate_forms = enumerate_forms
 
 
 def get_vm_instance(request, submit_id):
