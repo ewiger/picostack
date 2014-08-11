@@ -5,7 +5,7 @@
 PICOSTACK=/usr/local/bin/picostk
 GRP=www-data
 USER=pstk
-SUDO="/usr/bin/sudo -g $GRP -u $USER "
+SUDO="/usr/bin/sudo -g $GRP -u $USER -i"
 
 # Some things that run always
 touch /var/lock/pstk
