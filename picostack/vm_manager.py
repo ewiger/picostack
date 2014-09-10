@@ -253,7 +253,6 @@ class Kvm(VmManager):
             'host_vnc': host_vnc,
         }) + ' '.join([redirected_ports, host_vnc])
 
-
     def run_machine(self, machine):
         # Check if machine is in accepting state.
         assert machine.current_state == VM_IS_LAUNCHED
@@ -263,7 +262,12 @@ class Kvm(VmManager):
         #output = invoke(command)
         report_filepath = self.get_report_file(machine)
         pid_filepath = self.get_pid_file(machine)
-        assert not ProcessUtil.process_runs(pid_filepath)
+        if ProcessUtil.process_runs(pid_filepath):
+            logging.warning('Apparently, VM process is already running. '
+                            'Check %s ' % pid_filepath)
+            machine.change_state(VM_HAS_FAILED)
+            # TODO: kill the VM?
+            return
         ProcessUtil.exec_process(shell_command, report_filepath, pid_filepath)
         # Update state.
         machine.change_state(VM_IS_RUNNING)
@@ -277,7 +281,7 @@ class Kvm(VmManager):
         # First kill proc which is a child and then daemoncxt.
         if ProcessUtil.kill_process(proc_pidfile_path) \
                 and ProcessUtil.kill_process(cxt_pidfile_filepath):
-            logging.info('Succefully stoping VM processes as in %s and %s' %
+            logging.info('Successfully stopping VM processes as in %s and %s' %
                          (proc_pidfile_path, cxt_pidfile_filepath))
             # Proc pid should be taken care of.
             if os.path.exists(proc_pidfile_path):

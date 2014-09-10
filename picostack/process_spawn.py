@@ -254,7 +254,7 @@ class ProcessUtil(object):
             return False
         pid = int(open(pidfile_path).read())
         if not ProcessUtil.process_runs(pidfile_path):
-            logger.warn('Proccess was not found %d' % pid)
+            logger.warn('Process was not found %d' % pid)
             return False
         # SIGTERM is handled by DaemonContext
         os.kill(pid, signal.SIGTERM)

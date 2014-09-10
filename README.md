@@ -78,7 +78,7 @@ cd picostack
 pip install -e .
 ```
 
-or just give it a try your luck and directly pick a PyPI package:
+or just try your luck by directly picking a PyPI package:
 
 ```bash
 pip install picostack
