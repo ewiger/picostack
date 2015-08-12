@@ -50,7 +50,7 @@ setup(
     install_requires=[
         'sh >= 1.08',
         'daemoncxt >= 1.5.7',
-        'Django >= 1.6.2',
+        'Django >= 1.8.2',
         'psutil >= 2.1.1',
         'django-bootstrap3 >= 4.4.1',
     ],

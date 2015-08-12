@@ -40,7 +40,9 @@ ports over the network to check if the guest has complete booting.
 picostack init jeos 
 ```
 
-Will attempt to use *vmbuilder* to create an example ubuntu JeOS image, which can be copied and registered in the DB. 
+Will attempt to use [vmbuilder](https://help.ubuntu.com/12.04/serverguide/jeos-and-vmbuilder.html) to create an example ubuntu JeOS image, which can be copied and registered in the DB. 
+
+> Hint - a user/password combination is usually: ubuntu/ubuntu
 
 In practice, anything supported by KVM can be used as long as you can convert the disk image into [qcow2](http://www.linux-kvm.org/page/Qcow2) format (e.g. virtual box machines can be converted to be run by KVM).
 
@@ -53,7 +55,7 @@ Currently, in order to register a new *image* one should use an admin part of th
 Start by creating a new separate user for dedicated to run picostak daemon.
 
 ```bash
-adduser pstk
+sudo adduser pstk
 sudo usermod -a -G www-data pstk
 sudo usermod -a -G kvm pstk
 ```
@@ -128,6 +130,8 @@ You would also need to init the database. Make sure to add you picostack user ()
 Default location is:
 
 **/var/picostack/db/picostk.sqlite3**
+
+> Behind the scene, picostk will call a command which is equivalent to `./picostk-django migrate` for django 1.8+. This will create a DB. You still would want to create a super user with `./picostk-django createsuperuser`. (For details see django documentation).
 
 ### Running at boot time
 
@@ -214,6 +218,14 @@ them:
 pip install nose
 cd tests/
 nosetests
+```
+
+## Developer tips
+
+As a developer you may find *interactive mode* very handy:
+
+```
+./picostk -i -vvv daemon start
 ```
 
 ---
