@@ -134,6 +134,7 @@ class PicoStackApp(object):
         self.vm_manager.start_machines()
         self.vm_manager.stop_machines()
         self.vm_manager.destory_machines()
+        self.vm_manager.check_heartbeat()
 
     def run(self):
         while True:

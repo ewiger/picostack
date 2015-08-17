@@ -283,13 +283,13 @@ class Kvm(VmManager):
                 and ProcessUtil.kill_process(cxt_pidfile_filepath):
             logging.info('Successfully stopping VM processes as in %s and %s' %
                          (proc_pidfile_path, cxt_pidfile_filepath))
-            # Proc pid should be taken care of.
-            if os.path.exists(proc_pidfile_path):
-                os.unlink(proc_pidfile_path)
         else:
             logging.warning('Expected VM process does not run anymore. '
                             'Please check the log file for details: %s' %
                             self.get_report_file(machine))
+        # Proc pid should be taken care of.
+        if os.path.exists(proc_pidfile_path):
+            os.unlink(proc_pidfile_path)
         # Update state.
         machine.change_state(VM_IS_STOPPED)
 
@@ -338,4 +338,27 @@ class Kvm(VmManager):
                     machines.append(pinfo)
         for machine in machines:
             os.kill(machine['pid'], signal.SIGTERM)
+
+    def check_heartbeat(self):
+        '''
+        Check every pid that is tracked by picostack if the respective
+        machine is actually running? If not, then stop the machine and remove
+        the pid file.
+        '''
+        instances = VmInstance.objects.filter(current_state=VM_IS_RUNNING)
+        if not instances.exists():
+            logger.info('No machines are running to check the heartbeat..')
+            return
+        for machine in instances:
+            pid_filepath = self.get_pid_file(machine)
+            if ProcessUtil.process_runs(pid_filepath):
+                logger.info('Heart beat of "%s" is OK - still running' %
+                            machine.name)
+                continue
+            logging.warning('DB contains a running VM entry with no '
+                            'corresponding process.')
+            logging.info('Stopping the machine "%s" and removing pid files ' %
+                         machine.name)
+            machine.change_state(VM_IS_TERMINATING)
+            self.stop_machine(machine)
 
