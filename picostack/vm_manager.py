@@ -259,7 +259,6 @@ class Kvm(VmManager):
         # Bake a shell command to spawn the machine.
         shell_command = self.get_kvm_call(machine)
         logger.debug('Running VM with shell command:\n%s' % shell_command)
-        #output = invoke(command)
         report_filepath = self.get_report_file(machine)
         pid_filepath = self.get_pid_file(machine)
         if ProcessUtil.process_runs(pid_filepath):

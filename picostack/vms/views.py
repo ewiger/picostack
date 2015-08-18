@@ -133,3 +133,8 @@ def list_instances(request):
         'connect_url': request.build_absolute_uri('/connect_instance/'),
     })
     return render(request, 'instances/list.html', context)
+
+
+@login_required
+def novnc(request):
+    return render(request, 'novnc.html', {})

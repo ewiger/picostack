@@ -53,6 +53,7 @@ setup(
         'Django >= 1.8.2',
         'psutil >= 2.1.1',
         'django-bootstrap3 >= 4.4.1',
+        'websockify >= 0.7.0',
     ],
     data_files=[
         ('/etc/init.d', ['pstk']),
