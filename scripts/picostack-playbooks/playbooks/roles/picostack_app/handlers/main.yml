@@ -1,0 +1,3 @@
+---
+# handlers file for picostack_app
+- include: apache.yml

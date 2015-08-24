@@ -1,0 +1,18 @@
+# Ansible-based provisioning script automating the deploy of the picostack
+# on the linux (Ubuntu) host.
+# 
+# @author: Yauhen Yakimovich <eugeny.yakimovitch@gmail.com>,
+# 
+# @license: The MIT License (MIT). Read a copy of LICENSE distributed with
+#           this code.
+---
+- name: Deploy picostack application
+  hosts: targets
+  # vars_files:
+  #   - roles/xxx/vars/xxx.yml
+  vars:
+    # overwrite roles/picostack_app/defaults/main.yml    
+    deploy_user: pstk
+    app_domain: "{{ ansible_ssh_host }}"
+  roles:
+    - picostack_app

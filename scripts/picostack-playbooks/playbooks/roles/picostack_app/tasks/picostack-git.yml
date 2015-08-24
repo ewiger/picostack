@@ -1,0 +1,15 @@
+- name: Delete app folder if any
+  file: path="{{ app_dir }}" state=absent  
+
+- name: Get the latest code from github
+  git: repo="https://github.com/ewiger/picostack.git"
+       dest="{{ app_dir }}"
+       accept_hostkey=yes
+       update=yes
+       clone=yes
+       force=yes
+
+- name: Install app in dev mode
+  shell: "sudo pip install -e ."
+  args:
+    chdir: "{{ app_dir }}"

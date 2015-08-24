@@ -15,12 +15,16 @@ case "$1" in
   start)
     echo "Starting script pstk "
     $SUDO $PICOSTACK daemon start
+    echo "Starting sockify"  # DEBUG=False in django settings!
+    $SUDO ${PICOSTACK}-sockify
     ;;
   stop)
     echo "Cleaning state of the system"
     $SUDO $PICOSTACK clean all
     echo "Stopping script pstk"
     $SUDO $PICOSTACK daemon stop
+    echo "Stopping sockify"
+    pkill picostk-sockify
     ;;
   *)
     echo "Usage: /etc/init.d/pstk {start|stop}"

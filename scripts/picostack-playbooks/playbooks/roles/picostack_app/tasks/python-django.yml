@@ -1,0 +1,37 @@
+  # Update packages every hour
+- name: Update all packages to the latest version
+  sudo: yes
+  tags:
+    - update
+  apt: upgrade=safe update_cache=yes cache_valid_time=3600
+
+- name: Install apt packages
+  sudo: yes
+  apt:
+    name: "{{ item }}"
+    state: installed
+  with_items:
+    - git
+    - python-setuptools 
+    - python-dev
+    - build-essential
+    - libmysqlclient-dev
+  tags:
+    - python
+    - django
+
+- name: Install pip packages
+  sudo: yes
+  pip:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - MySQL-python
+    - simplejson
+    - django
+    - django-nose
+    #- django-registration-redux
+    #- djangorestframework
+  tags:
+    - python
+    - django

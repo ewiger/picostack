@@ -1,0 +1,11 @@
+---
+# defaults file for picostack_app
+# turn off/on debug deploy
+# deploy_debug: yes
+# other vars
+deploy_user: pstk
+app_domain: picostack.mysite.org
+admin_email: admin@{{ app_domain }}
+app_dir: "/home/{{ deploy_user }}/picostack_app"
+django_dir: /usr/local/lib/python2.7/dist-packages/picostack
+django_wsgi_dir: "{{ django_dir }}/g0ph"

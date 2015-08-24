@@ -16,4 +16,6 @@ if len(sys.argv) == 1:
     sys.argv += ['--target-config',
                  os.path.expanduser('~/.picostack/vnc-targets'),
                  picostack.settings.NOVNC_PARAMS['real_websockify_port']]
+    if not picostack.settings.DEBUG:
+        sys.argv += ['-D']
 websockify.websocketproxy.websockify_init()

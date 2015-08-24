@@ -1,0 +1,34 @@
+---
+# Install Apache server
+
+- name: install apache2
+  sudo: yes
+  apt: name=apache2
+
+- name: install mod_wsgi
+  sudo: yes
+  apt: name=libapache2-mod-wsgi
+
+- name: enabled mod_wsgi
+  sudo: yes
+  apache2_module: name=wsgi state=present
+  notify:
+    - restart apache2
+
+- name: enabled mod_rewrite
+  sudo: yes
+  apache2_module: name=rewrite state=present
+  notify:
+    - restart apache2
+
+- name: create virtual host file
+  sudo: yes
+  template: src=../templates/virtualhost.j2 dest="/etc/apache2/sites-available/{{ app_domain }}.conf"
+
+- name: enable apache site
+  sudo: yes
+  command: a2ensite "{{ app_domain }}"
+  args:
+    creates: "/etc/apache2/sites-enabled/{{ app_domain }}"
+  notify:
+    - restart apache2

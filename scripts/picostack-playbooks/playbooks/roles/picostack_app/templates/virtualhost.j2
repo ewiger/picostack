@@ -1,0 +1,39 @@
+# picostack virtual host: 
+<VirtualHost *:80>
+    ServerAdmin  {{ admin_email }}
+    DocumentRoot {{ django_wsgi_dir }}
+    ServerName {{ app_domain }}
+    ErrorLog ${APACHE_LOG_DIR}/picostack.error.log
+    CustomLog ${APACHE_LOG_DIR}/picostack.access.log combined
+
+    WSGIScriptAlias / {{ django_wsgi_dir }}/wsgi.py
+    WSGIDaemonProcess {{ app_domain }} python-path={{ django_dir }}:/usr/lib/python2.7/dist-packages/:/usr/local/lib/python2.7/dist-packages
+    WSGIProcessGroup picostack.mysite.org
+
+    <Directory "{{ django_wsgi_dir }}">
+        <Files wsgi.py>
+            Require all granted
+            # For apache <= 2.4 uncomment and use lines below instead
+            # Order allow,deny
+            # Allow from all            
+        </Files>
+    </Directory>
+
+    Alias /static/admin/ /usr/local/lib/python2.7/dist-packages/django/contrib/admin/static/admin/
+
+    <Directory "/usr/local/lib/python2.7/dist-packages/django/contrib/admin/static/admin/">
+        Require all granted
+        # For apache <= 2.4 uncomment and use lines below instead
+        # Order allow,deny
+        # Allow from all        
+    </Directory>
+
+    Alias /static/ {{ django_wsgi_dir }}/static/
+
+    <Directory "{{ django_wsgi_dir }}/static/">
+        Require all granted
+        # For apache <= 2.4 uncomment and use lines below instead
+        # Order allow,deny
+        # Allow from all
+    </Directory>
+</VirtualHost>

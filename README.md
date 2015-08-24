@@ -228,5 +228,16 @@ As a developer you may find *interactive mode* very handy:
 ./picostk -i -vvv daemon start
 ```
 
+## Deploy with ansible
+
+> Install `pip install ansible`
+
+Edit `scripts/picostack-playbooks/hosts` and play a scenario.
+
+```
+cd scripts/picostack-playbooks
+ansible-playbook playbooks/deploy-picostack.yml
+```
+
 ---
 wbr, yy
