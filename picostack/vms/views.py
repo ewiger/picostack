@@ -1,3 +1,5 @@
+import urllib
+from urlparse import urlparse
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from django import forms
@@ -6,6 +8,7 @@ from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from picostack.vms.models import (VmInstance, VM_IS_LAUNCHED,
                                   VM_IS_TERMINATING, VM_IS_TRASHED)
+import picostack.settings
 
 
 class VmInstanceForm(ModelForm):
@@ -58,6 +61,26 @@ def get_view_context():
     }
 
 
+def get_novnc_prefix(request):
+    # Build NOVNC URL
+    abs_url = request.build_absolute_uri('/')
+    parsed_url = urlparse(abs_url)
+    novnc_params = picostack.settings.NOVNC_PARAMS
+    netloc = parsed_url.netloc
+    params = {}
+    params['host'] = parsed_url.hostname
+    if novnc_params['sockify_port'] is not None:
+        params['port'] = novnc_params['sockify_port']
+    novnc_url = '{scheme}://{netloc}/{path}{params}'.format(
+        scheme=parsed_url.scheme,
+        netloc=netloc,
+        path='novnc',
+        params='?%s&%s' % (urllib.urlencode(params),
+                           urllib.urlencode({'path': 'websockify?token='}))
+    )
+    return novnc_url
+
+
 #
 # Views
 #
@@ -67,7 +90,7 @@ def logout_view(request):
 
 
 def get_connection_details(request):
-    if not 'name' in request.GET:
+    if 'name' not in request.GET:
         raise Exception('Missing instance name')
     try:
         vm_instance = VmInstance.objects.get(name=request.GET['name'])
@@ -131,6 +154,7 @@ def list_instances(request):
     context = get_view_context()
     context.update({
         'connect_url': request.build_absolute_uri('/connect_instance/'),
+        'novnc_url': get_novnc_prefix(request),
     })
     return render(request, 'instances/list.html', context)
 

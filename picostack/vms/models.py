@@ -1,3 +1,4 @@
+import os
 from django.db import models
 from picostack.errors import DataModelError
 
@@ -147,7 +148,7 @@ class VmInstance(models.Model):
         allocated_ports = [machine.localhost_vnc_port for machine
                            in VmInstance.objects.all()]
         for port in range(1, VmInstance.objects.count()):
-            if not port in allocated_ports:
+            if port not in allocated_ports:
                 return port
         return VmInstance.objects.count() + 1
 

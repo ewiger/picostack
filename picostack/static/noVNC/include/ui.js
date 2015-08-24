@@ -95,8 +95,14 @@ var UI;
             UI.initSetting('resize', 'off');
             UI.initSetting('shared', true);
             UI.initSetting('view_only', false);
-            UI.initSetting('path', 'websockify');
             UI.initSetting('repeaterID', '');
+            UI.initSetting('path', 'websockify');
+
+            // token = WebUtil.getQueryVar('token', null);
+            // var token = WebUtil.getQueryVar('token', 'test');
+            // if (token) {
+            //     WebUtil.createCookie('token', token, 1)
+            // }
 
             var autoconnect = WebUtil.getQueryVar('autoconnect', false);
             if (autoconnect === 'true' || autoconnect == '1') {

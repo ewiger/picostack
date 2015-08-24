@@ -1,5 +1,19 @@
 #!/usr/bin/env python
+'''
+Be default sockify is executed as:
 
+  `./picostk-sockify --target-config ~/.picostack/vnc-targets 8003`
+
+'''
+import os
+import sys
 import websockify
+import picostack.settings
 
+
+# Inject settings into the command line as default.
+if len(sys.argv) == 1:
+    sys.argv += ['--target-config',
+                 os.path.expanduser('~/.picostack/vnc-targets'),
+                 picostack.settings.NOVNC_PARAMS['real_websockify_port']]
 websockify.websocketproxy.websockify_init()

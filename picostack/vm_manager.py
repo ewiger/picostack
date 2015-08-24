@@ -1,10 +1,11 @@
 import os
+import sh
+import re
 import signal
 import shutil
 import logging
 import psutil
 from collections import deque
-from picostack.textwrap_util import wrap_multiline
 from picostack.vms.models import (
     VmInstance, VM_PORTS,
     VM_IN_CLONING, VM_IS_STOPPED, VM_IS_LAUNCHED, VM_IS_RUNNING,
@@ -165,6 +166,13 @@ class VmManager(object):
         logfiles_folder = self.config.get('app', 'log_path')
         return os.path.join(logfiles_folder, '%s.log' % machine.name)
 
+    def get_vnc_target_path(self, machine):
+        vnc_targets_path = os.path.join(self.config.get('app', 'statepath'),
+                                        'vnc-targets')
+        if not os.path.exists(vnc_targets_path):
+            os.makedirs(vnc_targets_path)
+        return os.path.join(vnc_targets_path, machine.name)
+
     @classmethod
     def create(self, name, config):
         '''Fabric of VM managers'''
@@ -224,6 +232,20 @@ class VmManager(object):
         raise NotImplementedError()
 
 
+def get_cmd_from_ps(needle):
+    result = sh.grep(sh.cat(sh.ps('-wwaeopid,cmd')), needle)
+    if result.exit_code == 0:
+        for line in result.stdout.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+            match = re.search(r'^(\d*)\s*(.*)', line)
+            if match.group(2).startswith('grep'):
+                continue
+            return match.group(2)
+    raise KeyError('Failed to find: %s' % needle)
+
+
 class Kvm(VmManager):
 
     def get_kvm_call(self, machine):
@@ -270,6 +292,21 @@ class Kvm(VmManager):
         ProcessUtil.exec_process(shell_command, report_filepath, pid_filepath)
         # Update state.
         machine.change_state(VM_IS_RUNNING)
+        # Put info into vnc target file.
+        vnc_target_path = self.get_vnc_target_path(machine)
+        with open(vnc_target_path, 'w+') as vnc_target:
+            try:
+                cmd = get_cmd_from_ps(needle=machine.disk_filename)
+            except KeyError as error:
+                logger.error('Failed to find VNC port of the vm: %s' % machine)
+                logger.exception(error)
+                return
+            match = re.search(r'-vnc localhost:(\d+)', cmd, re.MULTILINE)
+            local_vnc_port = 5900 + int(match.group(1))
+            # e.g 'test: localhost:5901'
+            vnc_info = '%s: localhost:%s' % (machine.name, local_vnc_port)
+            logger.info('Writing into VNC target file: %s' % vnc_info)
+            vnc_target.write(vnc_info + "\n")
 
     def stop_machine(self, machine):
         # Check if machine is in accepting state.
@@ -291,6 +328,11 @@ class Kvm(VmManager):
             os.unlink(proc_pidfile_path)
         # Update state.
         machine.change_state(VM_IS_STOPPED)
+        # Remove vnc target file
+        vnc_target_path = self.get_vnc_target_path(machine)
+        if os.path.exists(vnc_target_path):
+            logger.info('Removing VNC target file: %s' % vnc_target_path)
+            os.remove(vnc_target_path)
 
     def clone_from_image(self, machine):
         # Check if machine is in accepting state.
@@ -360,4 +402,3 @@ class Kvm(VmManager):
                          machine.name)
             machine.change_state(VM_IS_TERMINATING)
             self.stop_machine(machine)
-

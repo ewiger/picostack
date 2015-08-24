@@ -21,6 +21,9 @@ SECRET_KEY = '-9@)*p*&1hk+6$2ura%9m8pf(sdz@us4p4!y%zq(#0meck2t+o'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
+# Uncomment during development to serve static URLs by django
+# DEBUG = True
+
 
 TEMPLATE_DEBUG = True
 
@@ -104,3 +107,15 @@ BOOTSTRAP3 = {
     'horizontal_label_class': 'col-md-2',
     'horizontal_field_class': 'col-md-4',
 }
+
+# NO VNC settings
+NOVNC_PARAMS = {
+    'sockify_host_prefix': 'nonvc.',  # A virtual host prefix with websockify
+    'sockify_port': None,
+    'real_websockify_port': '8003',
+}
+
+if DEBUG:
+    # No prefix in debug but a different port
+    NOVNC_PARAMS['sockify_host_prefix'] = ''
+    NOVNC_PARAMS['sockify_port'] = NOVNC_PARAMS['real_websockify_port']
