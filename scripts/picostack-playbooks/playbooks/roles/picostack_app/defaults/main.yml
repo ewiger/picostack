@@ -14,3 +14,5 @@ picostack_db_group: "www-data"
 deploy_app_dir: "{{ deploy_home_folder }}/picostack_app"
 django_dir: /usr/local/lib/python2.7/dist-packages/picostack
 django_wsgi_dir: "{{ django_dir }}/picostack"
+picostack_djnago_user: pstk
+picostack_djnago_password: pstk

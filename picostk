@@ -192,9 +192,11 @@ class PicoStack(object):
             import stat
             os.chmod(db_folder, stat.S_IRWXU + stat.S_IRWXG)
             # Populate new empty DB with SQL, create an admin.
+            import django
+            django.setup()
             from django.core import management
             # Allow asking user for input.
-            management.call_command('syncdb', interactive=True, verbosity='1')
+            management.call_command('migrate', interactive=True, verbosity='1')
             # Finally, set www permissions and ownership.
             os.chown(DATABASE_LOCATION, uid, gid)
             os.chmod(DATABASE_LOCATION, stat.S_IRWXU + stat.S_IRWXG)

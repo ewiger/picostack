@@ -17,12 +17,14 @@
   sudo: yes
   file: path="{{ picostack_db_folder }}" state=absent
 
-- name: Make empty db folder with apache access
-  file: path="{{ picostack_db_folder }}" 
-        state=present 
-        owner="{{ picostack_db_owner }}"
-        group="{{ picostack_db_group }}"
-        mode=0775
+# XXX: this is already done by `sudo picostk db init`
+# - name: Make empty db folder with apache access
+#   sudo: yes
+#   file: path="{{ picostack_db_folder }}" 
+#         state=directory 
+#         owner="{{ picostack_db_owner }}"
+#         group="{{ picostack_db_group }}"
+#         mode=0775
 
 - name: Install app in dev mode
   shell: "pip install -e ."
