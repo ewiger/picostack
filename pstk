@@ -25,6 +25,9 @@ case "$1" in
     $SUDO $PICOSTACK daemon stop
     echo "Stopping sockify"
     pkill picostk-sockify
+    # blindly kill any left daemons
+    pkill picostk
+    pkill picostk
     ;;
   *)
     echo "Usage: /etc/init.d/pstk {start|stop}"

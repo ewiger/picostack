@@ -47,10 +47,11 @@ class PicoStackApp(object):
         # Init/set dameon options.
         self.config.add_section('daemon')
         self.config.set('daemon', 'stdin_path', '/dev/null')
-        self.config.set('daemon', 'stdout_path',
-                        '/dev/tty' if self.debug else '/dev/null')
-        self.config.set('daemon', 'stderr_path',
-                        '/dev/tty' if self.debug else '/dev/null')
+        # XXX: in two line below removed:
+        #  '/dev/tty' if self.debug else '/dev/null')
+        # - in most cases we prefer to be chatty.
+        self.config.set('daemon', 'stdout_path', '/dev/tty')
+        self.config.set('daemon', 'stderr_path', '/dev/tty')
         self.config.set('daemon', 'pidfile_path',
                         '%(default_statepath)s/' + self.name + '.pid')
         self.config.set('daemon', 'pidfile_timeout', '5')

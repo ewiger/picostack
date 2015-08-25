@@ -1,3 +1,8 @@
+# After runing this don't forget to create a superuser
+#
+# ./picostk-django createsuperuser --username="pstk"
+#
+---
 - name: Delete app folder if any
   sudo: yes
   file: path="{{ deploy_app_dir }}" state=absent  
@@ -50,3 +55,4 @@
   shell: "cp {{ deploy_app_dir }}/pstk /etc/init.d/pstk"
   notify:
     - restart picostack
+
