@@ -43,7 +43,7 @@ setup(
         'picostack', 'picostack.vms', 'picostack.vms.templatetags',
     ],
     package_data={
-        '': ['*.html', '*.svg', '*.js'],
+        '': ['*.html', '*.svg', '*.js', '*.png', '*.css'],
     },
     include_package_data=True,
     download_url='https://github.com/ewiger/picostack/tarball/master',
