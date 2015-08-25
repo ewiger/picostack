@@ -337,7 +337,7 @@ class Kvm(VmManager):
     def clone_from_image(self, machine):
         # Check if machine is in accepting state.
         assert machine.current_state == VM_IN_CLONING
-        logger.info('Cloning new machine \'%s\' form image \'%s\'' %
+        logger.info('Cloning new machine \'%s\' from image \'%s\'' %
                     (machine.name, machine.image.name))
         # Copy machine. Can take time.
         src_file = self.get_image_path(machine.image)
