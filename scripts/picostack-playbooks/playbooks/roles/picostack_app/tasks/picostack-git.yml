@@ -1,15 +1,50 @@
 - name: Delete app folder if any
-  file: path="{{ app_dir }}" state=absent  
+  sudo: yes
+  file: path="{{ deploy_app_dir }}" state=absent  
 
 - name: Get the latest code from github
   git: repo="https://github.com/ewiger/picostack.git"
-       dest="{{ app_dir }}"
+       dest="{{ deploy_app_dir }}"
        accept_hostkey=yes
        update=yes
        clone=yes
        force=yes
 
+- name: Delete picostack state folder if any
+  file: path="{{ picostack_state_folder }}" state=absent
+
+- name: Delete picostack db folder if any
+  sudo: yes
+  file: path="{{ picostack_db_folder }}" state=absent
+
+- name: Make empty db folder with apache access
+  file: path="{{ picostack_db_folder }}" 
+        state=present 
+        owner="{{ picostack_db_owner }}"
+        group="{{ picostack_db_group }}"
+        mode=0775
+
 - name: Install app in dev mode
-  shell: "sudo pip install -e ."
+  shell: "pip install -e ."
+  sudo: yes
   args:
-    chdir: "{{ app_dir }}"
+    chdir: "{{ deploy_app_dir }}"
+  notify:
+    - restart picostack
+
+- name: Init picostack config
+  shell: "picostk init config"  
+  notify:
+    - restart picostack
+
+- name: Init picostack config
+  shell: "picostk init db"
+  sudo: yes  
+  notify:
+    - restart picostack
+
+- name: Update the service script
+  sudo: yes
+  shell: "cp {{ deploy_app_dir }}/pstk /etc/init.d/pstk"
+  notify:
+    - restart picostack

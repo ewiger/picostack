@@ -3,9 +3,14 @@
 # turn off/on debug deploy
 # deploy_debug: yes
 # other vars
-deploy_user: pstk
 app_domain: picostack.mysite.org
 admin_email: admin@{{ app_domain }}
-app_dir: "/home/{{ deploy_user }}/picostack_app"
+deploy_user: "{{ ansible_ssh_user }}"
+deploy_home_folder: "{{ ansible_env.HOME }}"
+picostack_state_folder: "{{ deploy_home_folder }}/.picostack"
+picostack_db_folder: "/var/picostack/db/"
+picostack_db_owner: "www-data"
+picostack_db_group: "www-data"
+deploy_app_dir: "{{ deploy_home_folder }}/picostack_app"
 django_dir: /usr/local/lib/python2.7/dist-packages/picostack
-django_wsgi_dir: "{{ django_dir }}/g0ph"
+django_wsgi_dir: "{{ django_dir }}/picostack"

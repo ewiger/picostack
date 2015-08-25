@@ -30,8 +30,6 @@
     - simplejson
     - django
     - django-nose
-    #- django-registration-redux
-    #- djangorestframework
   tags:
     - python
     - django
