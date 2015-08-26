@@ -39,6 +39,10 @@
   notify:
     - restart picostack
 
+# In dev mode symlink 
+# cd /usr/local/lib/python2.7/dist-packages && \
+# ln -s /home/pstk/picostack_app/picostack
+
 - name: Init picostack config
   shell: "picostk init config"  
   notify:

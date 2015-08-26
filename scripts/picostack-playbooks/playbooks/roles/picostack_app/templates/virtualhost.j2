@@ -7,8 +7,8 @@
     CustomLog ${APACHE_LOG_DIR}/picostack.access.log combined
 
     WSGIScriptAlias / {{ django_wsgi_dir }}/wsgi.py
-    WSGIDaemonProcess {{ app_domain }} python-path={{ django_dir }}:/usr/lib/python2.7/dist-packages/:/usr/local/lib/python2.7/dist-packages
-    WSGIProcessGroup picostack.mysite.org
+    WSGIDaemonProcess {{ deploy_user }} python-path={{ deploy_app_dir }}:/usr/lib/python2.7/dist-packages/:/usr/local/lib/python2.7/dist-packages
+    WSGIProcessGroup {{ deploy_user }}
 
     <Directory "{{ django_wsgi_dir }}">
         <Files wsgi.py>
