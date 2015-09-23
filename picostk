@@ -20,6 +20,10 @@ from daemoncxt.runner import DaemonRunner, DaemonRunnerStopFailureError
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "picostack.settings")
 sys.path.append(os.path.dirname(__file__))
 
+import django
+if django.VERSION >= (1, 7):
+    django.setup()
+
 from picostack.deamon_app import get_picostack_app
 from picostack.vms.models import (VmImage, VmInstance, Flavour, VM_IS_RUNNING,
                                   VM_IS_TERMINATING)

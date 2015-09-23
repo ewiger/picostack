@@ -356,7 +356,7 @@ class Kvm(VmManager):
         disk_file = self.get_disk_path(machine)
         try:
             os.unlink(disk_file)
-        except IOError:
+        except (OSError, IOError):
             logger.info('Failed to remove the VM\'s disk: %s' % disk_file,
                         exc_info=True)
         # Clean logs.
