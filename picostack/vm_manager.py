@@ -233,7 +233,13 @@ class VmManager(object):
 
 
 def get_cmd_from_ps(needle):
-    result = sh.grep(sh.cat(sh.ps('-wwaeopid,cmd')), needle)
+    try:
+        result = sh.grep(sh.cat(sh.ps('-wwaeopid,cmd')), needle)
+    except sh.ErrorReturnCode_1:
+        raise KeyError('Failed to find: %s' % needle)
+    except sh.ErrorReturnCode:
+        print("unknown error")
+        exit(1)
     if result.exit_code == 0:
         for line in result.stdout.split('\n'):
             line = line.strip()
