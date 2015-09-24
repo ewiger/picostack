@@ -201,6 +201,7 @@ class VmInstance(models.Model):
     def save(self, *args, **kwargs):
         if self.disk_filename is None or self.disk_filename == '':
             self.disk_filename = self.get_default_disk_filename()
-        if self.localhost_vnc_port is None or self.localhost_vnc_port == 0:
-            self.localhost_vnc_port = self.get_default_localhost_vnc_port()
+        # XXX: localhost_vnc_port has to assigned every run() operation.
+        # if self.localhost_vnc_port is None or self.localhost_vnc_port == 0:
+        #     self.localhost_vnc_port = self.get_default_localhost_vnc_port()
         super(VmInstance, self).save(*args, **kwargs)

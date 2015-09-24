@@ -254,6 +254,24 @@ def get_cmd_from_ps(needle):
 
 class Kvm(VmManager):
 
+    def get_dynamic_localhost_vncport(self, machine):
+        local_vnc_port = None
+        if machine.has_ssh:
+            local_vnc_port = int(machine.ssh_mapping)
+        elif machine.has_vnc:
+            local_vnc_port = int(machine.vnc_mapping)
+        elif machine.has_rdp:
+            local_vnc_port = int(machine.rdp_mapping)
+        if local_vnc_port is None:
+            raise Exception('Failed to deduce local vnc port from mapped '
+                            'ports. At least one service from {ssh, vnc, rdp}'
+                            ' has to be mapped by user.')
+        first_port = int(self.config.get('app', 'first_mapped_port'))
+        local_vnc_port = local_vnc_port - first_port
+        assert local_vnc_port >= 0
+        logging.debug('Local VNC port is: %d' % local_vnc_port)
+        return local_vnc_port
+
     def get_kvm_call(self, machine):
         # Make a list of ports to redirect from the VM to host. Ports will be
         # available at the host computer.
@@ -271,6 +289,9 @@ class Kvm(VmManager):
             machine.map_port(port_to_map, unmapped_port)
             redirected_ports += ' -redir tcp:%d::%d ' % (unmapped_port,
                                                          VM_PORTS[port_to_map])
+        # Find unoccupied local vnc port.
+        machine.localhost_vnc_port = self.get_dynamic_localhost_vncport(
+            machine)
         host_vnc = '-vnc localhost:%d' % machine.localhost_vnc_port
         # Make a command line text with KVM call.
         return self.call_builder.get_call({
